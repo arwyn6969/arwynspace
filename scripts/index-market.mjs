@@ -287,6 +287,11 @@ async function main() {
         generatedAt: new Date().toISOString(),
         btcPrice: price,
         units: "human",          // every quantity here is in human units
+        // Provenance so the UI can state truthfully where the dispenser rows came
+        // from. Without this the freshness badge read two keys that only ever exist
+        // at runtime, so it could never report anything but "Indexed".
+        dispensersSource: dispensers.length ? (dispensers[0].origin || "scan") : null,
+        dispensersFetchedAt: new Date().toISOString(),
         dispensers, orders, orderHistory, signalsByAsset,
       }, null, 1));
     console.log("wrote data/market.json");

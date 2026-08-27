@@ -802,3 +802,6 @@ h2.piece {
 .freshnote { font-size: .7rem; color: var(--muted-2); max-width: 62ch; }
 
 .stat.live b { color: #6fdc8c; }
+
+/* Pair qualifier on a 24h price signal — the value is quote-per-base, not a ticker. */
+.pairnote { color: var(--muted-2); font-size: .85em; }

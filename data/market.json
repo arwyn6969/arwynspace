@@ -1,7 +1,9 @@
 {
- "generatedAt": "2026-07-29T20:56:51.419Z",
- "btcPrice": 63447.385,
+ "generatedAt": "2026-07-29T23:45:54.414Z",
+ "btcPrice": 63954.825,
  "units": "human",
+ "dispensersSource": "tokenscan",
+ "dispensersFetchedAt": "2026-07-29T23:45:54.414Z",
  "dispensers": [
   {
    "asset": "RAREBEAR",
@@ -2926,6 +2928,15 @@
     "note": "lowest of 2 dispensers"
    },
    {
+    "kind": "lastSale",
+    "mechanism": "dex",
+    "amount": 80000,
+    "asset": "DANKROSECASH",
+    "blockIndex": 797566,
+    "txHash": "519e88f0d13949ea2e0cd4fc8e8572c7526818338ab0a55df4be7f62f2b38b6b",
+    "note": "2 completed trades"
+   },
+   {
     "kind": "market24",
     "mechanism": "dex",
     "amount": 0.0000125,
@@ -3036,15 +3047,6 @@
    }
   ],
   "CHONGALIEN": [
-   {
-    "kind": "lastSale",
-    "mechanism": "dex",
-    "amount": 100000,
-    "asset": "DANKROSECASH",
-    "blockIndex": 774226,
-    "txHash": "c0f4534189046f9ff07b5384cf854ca991dca3b9e1fb6011ee0ed9de1e34a035",
-    "note": null
-   },
    {
     "kind": "market24",
     "mechanism": "dex",
@@ -3739,15 +3741,6 @@
    }
   ],
   "PMOBOSHI": [
-   {
-    "kind": "lastSale",
-    "mechanism": "dex",
-    "amount": 111111,
-    "asset": "DANKROSECASH",
-    "blockIndex": 774133,
-    "txHash": "b2177fda03f278e6f116214bb427af352d217b125d48b45738d779769a1ac3ef",
-    "note": "2 completed trades"
-   },
    {
     "kind": "market24",
     "mechanism": "dex",

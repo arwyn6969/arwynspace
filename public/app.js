@@ -49,7 +49,18 @@ const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": 
 const SATS = 1e8;
 const btc = sats => (sats / SATS).toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
 const btcAmt = b => Number(b).toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
-const fmt = n => (n == null ? "—" : Number(n).toLocaleString("en-US"));
+/**
+ * Number formatting. A bare toLocaleString() defaults to maximumFractionDigits: 3,
+ * which rendered 0.0001111 as "0" — that silently zeroed 15 of 28 floor signals and
+ * 28 of 73 24h figures. Chain values carry 8 decimals, so 8 is the correct ceiling.
+ */
+const fmt = n => {
+  if (n == null) return "—";
+  const v = Number(n);
+  if (!Number.isFinite(v)) return "—";
+  if (Number.isInteger(v)) return v.toLocaleString("en-US");
+  return v.toLocaleString("en-US", { maximumFractionDigits: 8 });
+};
 
 /**
  * Quantities reaching the client are ALREADY in human units — the indexer
@@ -62,7 +73,12 @@ function qty(units, divisible) {
   if (units == null) return "—";
   const n = Number(units);
   if (!Number.isFinite(n)) return "—";
-  if (!divisible || Number.isInteger(n)) return n.toLocaleString("en-US");
+  if (Number.isInteger(n)) return n.toLocaleString("en-US");
+  // Up to 8 places regardless of the divisible flag. The previous version routed
+  // non-divisible values through a bare toLocaleString(), which defaults to 3
+  // fraction digits and turned 0.0001111 into "0". Showing full precision on an
+  // indivisible asset is also the right call: a fractional balance there is an
+  // anomaly worth surfacing rather than rounding away.
   return n.toLocaleString("en-US", { maximumFractionDigits: 8 });
 }
 
@@ -753,33 +769,124 @@ function lightbox(src, pixel) {
 
 /* ---------------- market rows ---------------- */
 
+/**
+ * Normalise a dispenser row, whichever schema it arrived in.
+ *
+ * The market scan writes camelCase (priceSats / giveUnits / remainingUnits); the
+ * older stampchain-shaped rows are snake_case (satoshirate / give_quantity /
+ * give_remaining). The detail page read only the snake_case names, so against
+ * current data every buy row rendered "0 BTC" with em-dashes for both quantities —
+ * the same read-a-key-that-isn't-there fault as the order and freshness bugs.
+ */
+function readDispenser(d) {
+  const n = v => (v == null || v === "" ? null : (Number.isFinite(Number(v)) ? Number(v) : null));
+  const priceSats = n(d.priceSats) ?? n(d.satoshirate) ?? (n(d.priceBtc) != null ? Math.round(n(d.priceBtc) * SATS) : null);
+  return {
+    priceSats: priceSats ?? 0,
+    giveUnits: n(d.giveUnits) ?? n(d.give_quantity),
+    remainingUnits: n(d.remainingUnits) ?? n(d.give_remaining),
+    asset: d.asset ?? null,
+    assetLongname: d.assetLongname ?? d.asset_longname ?? null,
+  };
+}
+
 function dispenserRow(d, r) {
-  const price = Number(d.satoshirate || 0);
-  const usd = state.market?.btcPrice ? ` · $${((price / SATS) * state.market.btcPrice).toFixed(2)}` : "";
+  const dd = readDispenser(d);
+  const usd = state.market?.btcPrice ? ` · $${((dd.priceSats / SATS) * state.market.btcPrice).toFixed(2)}` : "";
   return `
   <div class="buy-row">
     <div class="left">
-      <div class="price">${btc(price)} BTC<small>Dispenser${usd ? esc(usd) : ""}</small></div>
-      <div class="qty">${qty(d.give_quantity, r.divisible)} per purchase · ${qty(d.give_remaining, r.divisible)} left</div>
+      <div class="price">${btc(dd.priceSats)} BTC<small>Dispenser${usd ? esc(usd) : ""}</small></div>
+      <div class="qty">${qty(dd.giveUnits, r.divisible)} per purchase · ${qty(dd.remainingUnits, r.divisible)} left</div>
     </div>
-    <a class="btn" href="${LINKS.xcpio(r.asset)}" target="_blank" rel="noopener noreferrer">Buy →</a>
+    <a class="btn" href="${LINKS.xcpio(r.assetLongname || r.asset)}" target="_blank" rel="noopener noreferrer">Buy →</a>
   </div>`;
 }
 
 function orderRow(o, r) {
-  const getting = o.get_asset === "BTC" || o.get_asset === "XCP"
-    ? `${qty(o.get_remaining ?? o.get_quantity, o.get_asset === "BTC")} ${esc(o.get_asset)}`
-    : `${qty(o.get_remaining ?? o.get_quantity, false)} ${esc(o.get_asset)}`;
+  const od = readOrder(o);
+  const map = new Map(artworks().map(a => [a.asset, a]));
+  // The paired asset's real divisibility, not a hardcoded false. XCP is divisible.
+  const getDiv = assetDivisible(od.getAsset, map);
+  const getting = `${qty(od.getShown, getDiv)} ${esc(od.getAssetLongname || od.getAsset || "")}`;
   return `
   <div class="buy-row">
     <div class="left">
-      <div class="price">${getting}<small>DEX order</small></div>
-      <div class="qty">for ${qty(o.give_remaining ?? o.give_quantity, r.divisible)} ${esc(r.asset)}</div>
+      <div class="price">${getting}<small>${od.isOpen ? "DEX order" : `DEX · ${esc(od.status)}`}</small></div>
+      <div class="qty">${od.isOpen ? "for" : "traded for"} ${qty(od.giveShown, r.divisible)} ${esc(nameOf(r))}</div>
     </div>
-    <a class="btn" href="${LINKS.horizon(r.asset)}" target="_blank" rel="noopener noreferrer">Trade →</a>
+    ${od.isOpen ? `<a class="btn" href="${LINKS.horizon(r.assetLongname || r.asset)}" target="_blank" rel="noopener noreferrer">Trade →</a>` : ""}
   </div>`;
 }
 
+
+
+/* ---------------- order reading ---------------- */
+
+/**
+ * Assets whose divisibility is known without consulting the collection index.
+ * Orders can be denominated in ANY asset, including ones this artist never issued.
+ */
+const DIVISIBLE_OUTSIDE = { XCP: true, BTC: true, PEPECASH: true };
+
+/** Divisibility of any asset an order names, collection member or not. */
+function assetDivisible(name, map) {
+  if (!name) return false;
+  if (Object.prototype.hasOwnProperty.call(DIVISIBLE_OUTSIDE, name)) return DIVISIBLE_OUTSIDE[name];
+  const r = map?.get(name);
+  return r ? !!r.divisible : false;
+}
+
+/**
+ * Normalise an order and pick the quantities that actually mean something for its state.
+ *
+ * Two schemas reach the client: open orders arrive camelCase from the market scan,
+ * history arrives snake_case from tokenscan. More importantly, `*_remaining` is
+ * ZERO on a filled order — that is what "filled" means. An earlier nullish chain
+ * read remaining first, and `??` cannot fall through zero, so all 44 completed
+ * sales rendered as "0 offered / 0 traded for".
+ *
+ * So: an open order shows what is still on the table; a settled one shows what the
+ * trade was actually for.
+ */
+/** Does this order involve a collection asset, on either side? */
+function orderTouchesCollection(o, map) {
+  return orderArtwork(o, map) != null;
+}
+
+/** The collection asset an order refers to, whichever side it sits on. */
+function orderArtwork(o, map) {
+  const names = [o.giveAsset, o.give_asset, o.giveAssetLongname, o.give_asset_longname,
+                 o.getAsset, o.get_asset, o.getAssetLongname, o.get_asset_longname];
+  for (const n of names) if (n && map.has(n)) return map.get(n);
+  return null;
+}
+
+function readOrder(o) {
+  const n = v => (v == null || v === "" ? null : (Number.isFinite(Number(v)) ? Number(v) : null));
+  const status = o.status ?? null;
+  const isOpen = status == null || status === "open";
+
+  const giveOriginal  = n(o.giveUnits)     ?? n(o.give_quantity);
+  const giveRemaining = n(o.giveRemaining) ?? n(o.give_remaining);
+  const getOriginal   = n(o.getUnits)      ?? n(o.get_quantity);
+  const getRemaining  = n(o.getRemaining)  ?? n(o.get_remaining);
+
+  return {
+    raw: o,
+    status,
+    isOpen,
+    giveAsset: o.giveAsset ?? o.give_asset ?? null,
+    getAsset:  o.getAsset  ?? o.get_asset  ?? null,
+    giveAssetLongname: o.giveAssetLongname ?? o.give_asset_longname ?? null,
+    getAssetLongname:  o.getAssetLongname  ?? o.get_asset_longname  ?? null,
+    giveShown: isOpen ? (giveRemaining ?? giveOriginal) : (giveOriginal ?? giveRemaining),
+    getShown:  isOpen ? (getRemaining  ?? getOriginal)  : (getOriginal  ?? getRemaining),
+    // Open orders carry blockIndex; history carries block_index.
+    blockIndex: o.blockIndex ?? o.block_index ?? null,
+    txHash: o.txHash ?? o.tx_hash ?? null,
+  };
+}
 
 /* ---------------- price signals ---------------- */
 
@@ -801,7 +908,14 @@ function priceAmount(sig) {
     const usd = state.market?.btcPrice ? ` · $${(sig.amount * state.market.btcPrice).toFixed(2)}` : "";
     return `${btcAmt(sig.amount)} BTC${usd}`;
   }
-  return `${fmt(Number(sig.amount.toPrecision(6)))} ${esc(sig.asset)}`;
+  // 24h signals name a trading PAIR ("FAUXCORNHOLE/PUDSEC"), not a single asset.
+  // Printing that where a ticker belongs read as though it were one asset's symbol.
+  const amount = fmt(Number(sig.amount.toPrecision(6)));
+  if (typeof sig.asset === "string" && sig.asset.includes("/")) {
+    const [base, quote] = sig.asset.split("/");
+    return `${amount} ${esc(quote)} <span class="pairnote">per ${esc(base)}</span>`;
+  }
+  return `${amount} ${esc(sig.asset)}`;
 }
 
 function signalBlock(asset) {
@@ -979,8 +1093,11 @@ function renderMarket() {
   const m = state.market;
   const map = new Map(artworks().map(a => [a.asset, a]));
   const disp = sortListings((m?.dispensers || []).filter(d => map.has(d.asset)), map);
-  const openOrders = (m?.orders || []).filter(o => map.has(o.asset ?? o.giveAsset ?? o.give_asset));
-  const history = (m?.orderHistory || []).filter(o => map.has(o.give_asset));
+  const openOrders = (m?.orders || []).filter(o => map.has(o.asset) || orderTouchesCollection(o, map));
+  // Match on EITHER side of the trade, and on longnames. Joining on give_asset
+  // alone dropped 18 of 154 events: a purchase paid for in XCP puts the artwork on
+  // the get side, so those sales vanished from the history entirely.
+  const history = (m?.orderHistory || []).filter(o => orderTouchesCollection(o, map));
   const filled = history.filter(o => o.status === "filled");
 
   view.innerHTML = `
@@ -1001,7 +1118,7 @@ function renderMarket() {
 
     ${!m ? `<div class="loading"><span class="spinner"></span>Reading the market…</div>` : `
       <div class="section-h"><h3>Dispensers</h3><div class="rule"></div>
-        ${freshness(!!m.dispensersLive, m.dispensersFetchedAt ?? m.generatedAt)}${sortControl()}</div>
+        ${dispenserFreshness(m)}${sortControl()}</div>
       <p class="explainer">A dispenser is a vending machine written into the chain. You send the exact
       amount of BTC to the dispenser address and it releases the piece automatically. Fixed price,
       no negotiation, no counterparty risk.</p>
@@ -1014,19 +1131,16 @@ function renderMarket() {
       BTC. Unlike dispensers these are indexed rather than live, because checking them means one
       request per asset across hundreds of assets.</p>
       ${openOrders.length
-        ? `<div class="listings">${openOrders.map(o => orderCard(o, map.get(o.asset ?? o.giveAsset ?? o.give_asset))).join("")}</div>`
+        ? `<div class="listings">${openOrders.map(o => orderCard(o, orderArtwork(o, map) ?? map.get(o.asset), false, map)).join("")}</div>`
         : `<div class="notice">No exchange orders are open at the moment.${history.length
             ? ` There are <strong>${history.length}</strong> in this wallet's history — ${
-              ["filled", "expired", "cancelled"].map(st => {
-                const n = history.filter(o => o.status === st).length;
-                return n ? `${n} ${st}` : null;
-              }).filter(Boolean).join(", ")} — listed below.` : ""}</div>`}
+              statusBreakdown(history)} — listed below.` : ""}</div>`}
 
       ${filled.length ? `
         <div class="section-h"><h3>Sold via the exchange</h3><div class="rule"></div><span class="count">${filled.length}</span></div>
         <p class="explainer">These trades completed, so they are prices somebody actually paid rather
         than an estimate.</p>
-        <div class="listings">${filled.slice(0, 40).map(o => orderCard(o, map.get(o.give_asset), true)).join("")}</div>
+        <div class="listings">${filled.slice(0, 40).map(o => orderCard(o, orderArtwork(o, map), true, map)).join("")}</div>
       ` : ""}
       <div style="height:4rem"></div>
     `}
@@ -1065,8 +1179,8 @@ function dispenserCard(d, r, m) {
     <div class="lbody">
       <div class="lname">${esc(nameOf(r || { asset: d.asset }))}</div>
       <div class="lmeta">
-        <span>${qty(d.giveUnits ?? d.give_quantity, r?.divisible)} per purchase</span>
-        <span class="dot">·</span><span>${qty(d.remainingUnits ?? d.give_remaining, r?.divisible)} remaining</span>
+        <span>${qty(readDispenser(d).giveUnits, r?.divisible)} per purchase</span>
+        <span class="dot">·</span><span>${qty(readDispenser(d).remainingUnits, r?.divisible)} remaining</span>
         ${r?.divisible ? `<span class="dot">·</span><span>divisible</span>` : ""}
         ${r?.isStamp ? `<span class="dot">·</span><span>Bitcoin Stamp</span>` : ""}
       </div>
@@ -1079,28 +1193,60 @@ function dispenserCard(d, r, m) {
   </article>`;
 }
 
-function orderCard(o, r, isHistory = false) {
-  // Orders may be denominated in ANY asset, so the paired asset is always shown.
-  const giveU = o.giveRemaining ?? o.giveUnits ?? o.give_remaining ?? o.give_quantity;
-  const getU  = o.getRemaining  ?? o.getUnits  ?? o.get_remaining  ?? o.get_quantity;
-  const getAsset = o.getAsset ?? o.get_asset;
-  const giving = qty(giveU, r?.divisible);
-  const asking = `${qty(getU, false)} ${esc(getAsset)}`;
+function orderCard(o, r, isHistory = false, map = null) {
+  const od = readOrder(o);
+  const lookup = map || new Map(artworks().map(a => [a.asset, a]));
+
+  // Which side of the trade is the artwork? A purchase paid for in XCP puts the
+  // piece on the GET side, and those were being dropped entirely (see the join).
+  const artIsGive = !!(r && (od.giveAsset === r.asset || od.giveAssetLongname === r.assetLongname));
+  const artUnits  = artIsGive ? od.giveShown : od.getShown;
+  const payAsset  = artIsGive ? od.getAsset  : od.giveAsset;
+  const payName   = (artIsGive ? od.getAssetLongname : od.giveAssetLongname) || payAsset || "";
+  const payUnits  = artIsGive ? od.getShown : od.giveShown;
+  const payDiv    = assetDivisible(payAsset, lookup);
+
+  const artLabel  = artIsGive ? (od.isOpen ? "offered" : "sold") : (od.isOpen ? "wanted" : "bought");
+  const payLabel  = od.isOpen ? (artIsGive ? "asking" : "offering") : "traded for";
+
   return `
-  <article class="listing ${isHistory ? "past" : ""}" data-a="${esc(o.giveAsset ?? o.give_asset)}">
+  <article class="listing ${isHistory ? "past" : ""}" data-a="${esc(r?.asset ?? od.giveAsset ?? "")}">
     ${listingThumb(r)}
     <div class="lbody">
-      <div class="lname">${esc(nameOf(r || { asset: o.give_asset }))}</div>
+      <div class="lname">${esc(nameOf(r || { asset: od.giveAsset }))}</div>
       <div class="lmeta">
-        <span>${giving} offered</span>
-        ${o.status && o.status !== "open" ? `<span class="dot">·</span><span class="st-${esc(o.status)}">${esc(o.status)}</span>` : ""}
-        ${o.block_index ? `<span class="dot">·</span><span>${esc(fmtDate(o.block_index))}</span>` : ""}
+        <span>${qty(artUnits, r?.divisible)} ${esc(artLabel)}</span>
+        ${od.status && od.status !== "open" ? `<span class="dot">·</span><span class="st-${esc(statusKey(od.status))}">${esc(shortStatus(od.status))}</span>` : ""}
+        ${od.blockIndex ? `<span class="dot">·</span><span>${esc(fmtDate(od.blockIndex))}</span>` : ""}
       </div>
     </div>
-    <div class="lprice"><b>${asking}</b><small>${isHistory ? "traded for" : "asking"}</small></div>
-    ${isHistory ? "" : `<a class="btn" href="${LINKS.horizon(r?.assetLongname || o.giveAsset || o.give_asset)}" target="_blank" rel="noopener noreferrer">Trade →</a>`}
+    <div class="lprice"><b>${qty(payUnits, payDiv)} ${esc(payName)}</b><small>${esc(payLabel)}</small></div>
+    ${od.isOpen ? `<a class="btn" href="${LINKS.horizon(r?.assetLongname || od.giveAsset)}" target="_blank" rel="noopener noreferrer">Trade →</a>` : ""}
   </article>`;
 }
+
+/**
+ * Status counts derived from the data rather than a fixed list.
+ *
+ * A hardcoded [filled, expired, cancelled] silently omitted the 2 events carrying
+ * "invalid: non-positive give quantity; zero give or zero get", so the numbers on
+ * screen did not sum to the total stated beside them.
+ */
+function statusBreakdown(orders) {
+  const counts = new Map();
+  for (const o of orders) {
+    const k = shortStatus(o.status ?? "unknown");
+    counts.set(k, (counts.get(k) || 0) + 1);
+  }
+  return [...counts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([k, n]) => `${n} ${esc(k)}`)
+    .join(", ");
+}
+
+/** CSS-safe status key, and a short label for the long "invalid: ..." status. */
+const statusKey = s => String(s || "").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+const shortStatus = s => (String(s || "").startsWith("invalid") ? "invalid" : String(s || ""));
 
 function bindListingThumbs() {
   view.querySelectorAll(".listing[data-a]").forEach(el => {
@@ -1138,6 +1284,21 @@ function megaDispensers() {
 }
 
 const megaIsLive = () => !!(state.mega?.dispensers?.length);
+
+/**
+ * Dispenser freshness, reading keys that actually exist.
+ *
+ * Two things can make dispenser rows current: a successful in-page live fetch,
+ * which sets dispensersLive at runtime, or the indexer's own scan, which now stamps
+ * dispensersSource and dispensersFetchedAt into market.json. The previous version
+ * checked only the runtime keys — absent from the file — so the badge was stuck on
+ * "Indexed" permanently, even immediately after a live fetch.
+ */
+function dispenserFreshness(m) {
+  if (!m) return freshness(false, null);
+  const at = m.dispensersFetchedAt ?? m.generatedAt ?? null;
+  return freshness(!!m.dispensersLive, at);
+}
 
 /** A small, consistent badge so every figure declares its own freshness. */
 function freshness(isLive, at) {
