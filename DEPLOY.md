@@ -40,47 +40,72 @@ Set these in the Vercel dashboard under Settings → Environment Variables. All 
 | `MEGA_ADDRESS` | `1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j` | Which address the simulator reads |
 | `XCP_API` | `https://api.counterparty.io:4000` | Point at your own node if you have one |
 
-## Cloudflare Pages
+## Cloudflare Workers (static assets)
 
-An alternative (or addition) to Vercel. `wrangler.toml` and `public/_headers` are committed;
-`vercel.json` is left in place and the two hosts ignore each other.
+`wrangler.toml` and `public/_headers` are committed. `vercel.json` is left in place; the two
+hosts ignore each other.
 
-**Phase A — static, no code changes needed.**
+**Workers, not Pages** — that is Cloudflare's own recommendation: *"Workers Static Assets is
+the recommended way to deploy static sites... If you are starting a new project, use Workers
+instead of Pages. Pages continues to work, but new features and optimizations are focused on
+Workers."*
+
+### Workers Builds settings
 
 | Setting | Value |
 |---|---|
 | Build command | `npm run build` |
-| Output directory | `public` |
-| Install command | *(leave empty — there are no dependencies)* |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
 | Node version | pinned to 22 by `.node-version` — see below |
 
-That is the whole configuration. It works because the client falls back from `/api/*` to the
-committed snapshots in `public/data/`, so every view renders without a single function
-deployed. Hash routing (`#/collected`) means no SPA rewrite rule is needed either.
+There is no separate "install command" field; Workers Builds runs `npm install` automatically.
+This project has no runtime dependencies, so that install is a no-op — there is no need to set
+`SKIP_DEPENDENCY_INSTALL`.
+
+**Keep the build command.** `npm run build` stages `data/` into `public/data/` and injects the
+artist name and tagline from `config/wallets.json`. Without it the deploy would ship whatever
+`public/data/` happened to be committed, which breaks the daily-refresh design. Do **not** use
+`npm run ship` — that also writes `dist/gallery.html`, which is gitignored and is not served.
+
+### Why the whole config is four lines
+
+```toml
+name = "arwynspace"
+compatibility_date = "2026-08-27"
+
+[assets]
+directory = "./public"
+```
+
+No `main` entry point, because this is a purely static site and no code needs to run per
+request. It works because the client falls back from `/api/*` to the committed snapshots in
+`public/data/`, so every view renders with no functions deployed at all. Hash routing
+(`#/collected`) means no single-page-application fallback rule is needed either.
+
+`public/_headers` is honoured — `_headers` and `_redirects` are supported natively by Workers
+static assets as long as they sit inside the assets directory.
 
 **Do not delete `.node-version`.** Every script uses `import.meta.dirname`, which arrived in
-Node 20.11. Cloudflare Pages has historically defaulted to Node 18, where it is `undefined`, so
-`path.resolve(import.meta.dirname, "..")` throws and the build fails with a message that points
-nowhere near the cause. `package.json` declares `engines: >=20`, but that is a declaration — it
-does not tell the host which Node to use.
+Node 20.11. Build environments have historically defaulted to Node 18, where it is `undefined`,
+so `path.resolve(import.meta.dirname, "..")` throws and the build fails with a message that
+points nowhere near the cause. `package.json` declares `engines: >=20`, but that is a
+declaration to consumers — it does not tell the build host which Node to use.
 
-Do **not** set the build command to `npm run ship`. That additionally bundles
-`dist/gallery.html`, which is gitignored and is not what Pages serves.
+### Adding the API routes later (optional)
 
-**Phase B — the API routes, optional.**
-
-`api/*.js` are Vercel Node handlers (`export default (req, res)`). Pages Functions use
-`export function onRequest(context)` returning a `Response`, and live in `functions/`.
+`api/*.js` are Vercel Node handlers (`export default (req, res)`). To serve them from Workers
+you would add a `main` entry point plus an `ASSETS` binding, and rewrite each handler to accept
+a `Request` and return a `Response`.
 
 | Route | Porting effort |
 |---|---|
 | `api/stats.js` | Mechanical — `fetch` only |
 | `api/market.js` | Mechanical — `fetch` only |
 | `api/mega.js` | Mechanical — `fetch` only |
-| `api/holders.js` | **Needs thought** — reads the snapshot off disk with `fs.readFileSync`, and Workers have no filesystem. Must read through the assets binding instead |
+| `api/holders.js` | **Needs thought** — reads the snapshot with `fs.readFileSync`, and Workers have no filesystem. It would read through the assets binding instead |
 
-The `*/15` cron in `vercel.json` has no Pages equivalent. It only warms the `/api/mega` cache;
-`refresh.yml` already handles the real daily data refresh.
+Do not port `api/holders.js` by pattern-matching the other three.
 
 ## A custom domain
 

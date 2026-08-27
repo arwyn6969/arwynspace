@@ -1,54 +1,73 @@
-# Cloudflare Pages configuration.
+# Cloudflare Workers configuration — static assets, no Worker script.
 #
-# This sits alongside vercel.json rather than replacing it — the two hosts read
+# This sits alongside vercel.json rather than replacing it. The two hosts read
 # different files and neither is confused by the other's presence, so the site can
 # be deployed to either or both.
 #
-# WHY THIS IS A STATIC DEPLOY AND WHY THAT IS ENOUGH
+# WHY WORKERS AND NOT PAGES
 #
-# The client asks for /api/holders, /api/market, /api/stats and /api/mega first,
-# and falls back to the committed snapshots in public/data/ when those 404
-# (public/app.js, loadHolders/loadMarket and friends). public/data/ is tracked in
-# git on purpose, so a host serving only static files still renders the whole
-# site: gallery, Collected, Collectors, Market and every artwork page. The API
-# routes normalise units server-side and save a round trip; they are an
-# optimisation here, not a requirement.
+# Cloudflare's own guidance: "Workers Static Assets is the recommended way to
+# deploy static sites... If you are starting a new project, use Workers instead of
+# Pages. Pages continues to work, but new features and optimizations are focused
+# on Workers." An earlier version of this file used `pages_build_output_dir`, which
+# is a Pages key — `npx wrangler deploy` would have rejected it.
+#
+# WHY THERE IS NO `main`
+#
+# This is a purely static site, so no Worker script is needed. `assets.directory`
+# alone is a complete configuration: Wrangler uploads the directory and Cloudflare
+# serves it. Adding a `main` entry point would only be necessary to run code on
+# request — for an API route or server-side rendering.
+#
+# WHY A STATIC DEPLOY IS ENOUGH
+#
+# The client asks for /api/holders, /api/market, /api/stats and /api/mega first and
+# falls back to the committed snapshots in public/data/ when those 404 (see
+# loadHolders and friends in public/app.js). public/data/ is tracked in git on
+# purpose, so a host serving only static files still renders the whole site:
+# gallery, Collected, Collectors, Market and every artwork page. The API routes
+# normalise units server-side and save a round trip; here they are an optimisation,
+# not a requirement.
 #
 # Routing needs no rewrite rule. The app uses hash routes (#/collected,
-# #/art/CARPOPODITE), so every URL is served by index.html without an SPA
-# fallback — one of the few genuine advantages of hash routing.
+# #/art/CARPOPODITE), so every URL is served by index.html without a
+# single-page-application fallback — one of the few real advantages of hash routing.
 #
-# ADDING THE API ROUTES LATER (Phase B)
+# public/_headers is honoured: `_headers` and `_redirects` are supported natively by
+# Workers static assets, provided they sit inside the assets directory. It is not
+# itself served as a file.
 #
-# The four routes in api/ are Vercel Node handlers — `export default (req, res)`.
-# Cloudflare Pages Functions want `export function onRequest(context)` returning a
-# Response. Three of them (stats, market, mega) only use fetch and port
-# mechanically. api/holders.js does fs.readFileSync(process.cwd() + "/data/...")
-# and Workers have no filesystem, so it must read the snapshot through the assets
-# binding or env instead. Do not port it by pattern-matching the other three.
-#
-# vercel.json also declares a cron (*/15 on /api/mega). Pages has no equivalent;
-# Workers cron triggers or GitHub Actions would cover it. That cron only warms a
-# cache, and .github/workflows/refresh.yml already handles the real data refresh.
-
-name = "arwynspace"
-pages_build_output_dir = "public"
-compatibility_date = "2026-08-27"
-
 # NODE VERSION IS PINNED IN .node-version (22), AND IT HAS TO BE.
 #
-# Every script here uses `import.meta.dirname`, which landed in Node 20.11.
-# Cloudflare Pages has historically defaulted to Node 18, where that property is
+# Every script here uses `import.meta.dirname`, which landed in Node 20.11. Build
+# environments have historically defaulted to Node 18, where that property is
 # undefined — so `path.resolve(import.meta.dirname, "..")` throws and the build
-# fails with an error that points nowhere near the real cause. Pages reads
-# .node-version; do not delete it. package.json declares engines >=20, but that is
-# a declaration, not an instruction to the host.
+# fails with an error that points nowhere near the real cause. Do not delete it.
+# package.json declares engines >=20, but that is a declaration to consumers, not
+# an instruction to the build host.
 #
-# Build command for the Pages dashboard / CI:
+# WORKERS BUILDS SETTINGS THAT GO WITH THIS FILE
 #
-#   npm run build
+#   Build command:   npm run build
+#   Deploy command:  npx wrangler deploy
+#   Root directory:  /
 #
-# It stages data/ into public/data/ and injects the artist name and tagline from
-# config/wallets.json. There are no dependencies to install. Do not use
-# `npm run ship` here — that also bundles dist/gallery.html, which is gitignored
-# and not what Pages serves.
+# `npm run build` stages data/ into public/data/ and injects the artist name and
+# tagline from config/wallets.json. Keep it. Do NOT use `npm run ship` here — that
+# also writes dist/gallery.html, which is gitignored and is not what gets served.
+#
+# There are no runtime dependencies, so the automatic `npm install` is a no-op.
+# Setting SKIP_DEPENDENCY_INSTALL is unnecessary either way.
+#
+# vercel.json also declares a cron (*/15 on /api/mega). Workers would express that
+# as a cron trigger, but that cron only warms a cache — the real daily data refresh
+# is .github/workflows/refresh.yml.
+
+name = "arwynspace"
+compatibility_date = "2026-08-27"
+
+[assets]
+directory = "./public"
+
+[observability]
+enabled = true
