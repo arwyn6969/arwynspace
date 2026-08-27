@@ -1,0 +1,68 @@
+# Runs the contract suite and the field-mismatch probe on every push and pull request.
+#
+# Worth stating why this exists, because the tests are unusual. Every defect this
+# project has shipped was silent: the view read a field the data did not carry in the
+# collection being queried, or read a real field holding the wrong value for that
+# record's state. Nothing crashed. Completed sales rendered "0 traded for" for weeks,
+# an artwork page never showed a DEX listing at all, and an API route was one deploy
+# away from displaying every divisible dispenser 100,000,000x too large.
+#
+# So these checks run the shipping client under Node against the real snapshots, and
+# the probe additionally proves itself by being pointed at a deliberately broken copy.
+# A checker nobody has made fail is not evidence.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      # public/data is committed, so the suites can run without a network fetch.
+      # Rebuild anyway: it re-stages data/ into public/data and would surface a drift
+      # between the two, which is the gap bundle.mjs also refuses to ship across.
+      - name: Stage data
+        run: npm run build
+
+      - name: Tests
+        run: npm run test
+
+      - name: Field-mismatch probe
+        run: npm run probe
+
+      # Prove the probe can still fail. Reintroduce a real historical defect —
+      # listingsFor filtering open orders on give_asset, a key only order history
+      # carries — and require a non-zero exit. If this step passes, the probe has
+      # stopped detecting the class of bug it exists for.
+      - name: Prove the probe detects a known defect
+        run: |
+          node test/break-for-proof.cjs /tmp/app-broken.js
+          if APP_JS=/tmp/app-broken.js npm run probe; then
+            echo "::error::The probe passed against a client with a known defect restored. It has stopped detecting field mismatches and cannot be trusted."
+            exit 1
+          fi
+          echo "Probe correctly rejected the broken client."
+
+      # Same principle applied to the Collected suite. The defect reintroduced here is
+      # readHolding reporting 0 holders for a piece whose holder fetch failed — the
+      # absent-versus-zero conflation that this project has now shipped four times, and
+      # the one thing the cohort split exists to prevent.
+      - name: Prove the Collected suite detects absent-as-zero
+        run: |
+          node test/break-collected-for-proof.cjs /tmp/collected-broken.js
+          if COLLECTED_JS=/tmp/collected-broken.js node test/collected.test.mjs; then
+            echo "::error::The Collected suite passed against a module that reports unmeasured pieces as zero holders. It has stopped detecting the absent-versus-zero defect and cannot be trusted."
+            exit 1
+          fi
+          echo "Collected suite correctly rejected the broken module."
+
+      - name: Bundle
+        run: npm run bundle

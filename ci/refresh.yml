@@ -1,0 +1,56 @@
+# Keeps the indexed layer current.
+#
+# The live layer (dispensers, prices, mega dispenser state) is fetched in the
+# browser or by the serverless routes on every visit. This workflow handles the
+# part that CANNOT be live: resolving artwork for 500+ assets and aggregating
+# holders across 400+ of them costs thousands of upstream requests, so it runs on
+# a schedule and commits the result.
+name: Refresh collection index
+
+on:
+  schedule:
+    - cron: "0 5 * * *"      # daily, 05:00 UTC
+  workflow_dispatch:          # and on demand
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+
+      # Asset resolution. Merges with the previous snapshot, so a partial run can
+      # only ever add, never shrink the collection.
+      - run: node scripts/index-assets.mjs
+        continue-on-error: true
+
+      # Market and holders. Refuses to write if coverage drops materially, which
+      # protects the leaderboard from a rate-limited run.
+      - run: node scripts/index-market.mjs
+        continue-on-error: true
+
+      - run: node scripts/build.mjs
+
+      # Validate the refreshed snapshot BEFORE committing it.
+      #
+      # Both indexers above are continue-on-error, because a partial refresh is better
+      # than none. The consequence is that a rate-limited or half-failed run still
+      # reaches this point, and this repository has already been bitten by exactly that:
+      # a throttled run once wrote a broken leaderboard over a good one, and nothing
+      # noticed. The indexers have their own anti-clobber guards now, but those check
+      # coverage, not correctness.
+      #
+      # Deliberately NOT continue-on-error. If the refreshed data cannot satisfy the
+      # contract, the job fails and commits nothing, leaving yesterday's good snapshot
+      # in place. Failing closed on data quality is the whole point.
+      - name: Check refreshed data against the contract
+        run: npm run check
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "index-bot"
+          git config user.email "index-bot@users.noreply.github.com"
+          git add data/ public/data/
+          git diff --staged --quiet || git commit -m "Refresh collection index ($(date -u +%Y-%m-%d))"
+          git push
