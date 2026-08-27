@@ -1,0 +1,88 @@
+{
+ "_comment": "Manual media overrides — highest priority, they win over anything resolved from the chain or a mirror. These 15 were recovered from Arweave via the EasyAsset publisher wallet after easyasset.art went dark: the JSON wrapper is gone for good, but every image file survives on Arweave. Bare-txid gateway form is used deliberately, because the manifest-path form (arweave.net/<manifest>/<file>.png) 302-redirects into a 404.",
+ "GLAIRPEPE": {
+  "image": "https://arweave.net/HYBE73zxhBuTXOvnhl6WV-9ylfDm1aUO8QJAV9p5_v0",
+  "thumb": "https://arweave.net/ad-KKWMs5cAMg1jDupxW3tdCUi9UdGSpt19nJqEU3c4",
+  "artist": "Arwyn"
+ },
+ "A6415100651319925261": {
+  "image": "https://arweave.net/LdM8Gt4O80eRYZxYrCcD7ljzS6FGOWq8WTmJNHJsJzQ",
+  "artist": "Arwyn",
+  "note": "Longname FAKASTAMPS.DJPEPE. Arweave thumbnail tx was not retained; main image is intact."
+ },
+ "BOBOBARACUS": {
+  "image": "https://arweave.net/IcIqONW9k3c9HuCNzHgcSrJucQOHelezBqz5KNbZqwo",
+  "artist": "Arwyn",
+  "note": "Only a thumbnail was ever uploaded, so this 48x48 file is the full extent of the art on Arweave."
+ },
+ "KRAZYKEVIN": {
+  "image": "https://arweave.net/_ZjQso-jn1gIerUF1o68CVIvIiDuWw6t2i7npYQnahw",
+  "thumb": "https://arweave.net/Epb7SIabXlsDhGrmimnY-XXo8tgRHKqyEsK3rFIuGrs",
+  "artist": "Arwyn"
+ },
+ "WHITEYWOJAK": {
+  "image": "https://arweave.net/XRscVgjshGsfVXTxDmR_BSwUKvuO4OgjC-ZEbvpEGAI",
+  "thumb": "https://arweave.net/yqhxBtAlO6VKY3q3JZ-N3L6dOINm15M2eH3ZwMRZZzk",
+  "artist": "Arwyn"
+ },
+ "JUANTASTIC": {
+  "image": "https://arweave.net/hIEu8XGCFCDTs44rkHTGh9accmWcVXD_NDGXFqjDcAs",
+  "thumb": "https://arweave.net/0wC3cUFMoT98li4XsYOpDbiiaOqaR97DuoBlG9DWSEI",
+  "artist": "Arwyn"
+ },
+ "TREEOFBRBJP": {
+  "image": "https://arweave.net/_BIDR70nkbsvVf2YJTKSYCz9JydLfA5meOc8DJOz0_g",
+  "thumb": "https://arweave.net/C8XljhfZKuIpdgpl5ALMCgk4yb619xtmI7nK-5_yw7c",
+  "artist": "Arwyn"
+ },
+ "HOMERBRICK": {
+  "image": "https://arweave.net/DxVdqpuMZ-gMKiZcVwrggzVvW2CgnhcYU4bkWoe6_hU",
+  "thumb": "https://arweave.net/NSRYBL-gqy_BFLWJOKDiZh-mVgBQuHw04IhY-si831M",
+  "artist": "Fake Yoter"
+ },
+ "BRICKDREAM": {
+  "image": "https://arweave.net/5kMiAiL_3-PVP3_IpEcrSG6JMBdJzYDJjBhsEPopjCg",
+  "thumb": "https://arweave.net/cpTKLShkIukFh2lSH99ULdstbHShC6wSoWBSjMBsLeo",
+  "artist": "Fake Being"
+ },
+ "BRICKMUNDI": {
+  "image": "https://arweave.net/HneyDdyagMIl0nDAri_ipiTEs7-Ruu7bWtjOi9S8qZc",
+  "thumb": "https://arweave.net/YKlASDe_tJtmw3gxJC_DSRpU9i5e6dS3yQGMSeyW3XI",
+  "artist": "Fake Nardo"
+ },
+ "KEVAMINEPUP": {
+  "image": "https://arweave.net/Y4L-b8HyvEV-2h2RwrBD7hJYboRiAhIvbQLV1sMoXzE",
+  "thumb": "https://arweave.net/VlVG-S55ZLJ_YTWqkBIBgMe6FOOfDsnRYp93ZIxG_rg",
+  "artist": "Arwyn"
+ },
+ "OPRETURNS": {
+  "image": "https://arweave.net/eZHTO9nrzMGCOOoCDy3y_pR4TuOhO4EkVI40tnC7EZs",
+  "thumb": "https://arweave.net/OhYjRDQCW6Y01z4q5JSNV4K_PVtk6xABUXH_yWI-dgc",
+  "artist": "Arwyn"
+ },
+ "FLOCKCLUB": {
+  "image": "https://arweave.net/pUww06TnN6BDH2c5Q7Vi5HyVNrKOrzY4fGpDLbtn_ls",
+  "thumb": "https://arweave.net/auclQ7i4298D0vyEROFOMVHsBt3zNMp81EQiTvNVhBg",
+  "artist": "Arwyn"
+ },
+ "SHODDYLAY": {
+  "image": "https://arweave.net/UhCM-0MW7bqxqo6p7fK0BL_npcw8JyzZCVf2mjFJoNk",
+  "thumb": "https://arweave.net/AKaGtC5YXea4cFKETbUtbg_0fFHNnd4_I6eYKVpLs50",
+  "artist": "Arwyn"
+ },
+ "UCITCOIN": {
+  "image": "https://arweave.net/gslPbKVhhuo0wxFJhRlwi0vFP0SK0gMbgOZc1ooUtnQ",
+  "thumb": "https://arweave.net/yBTHJ2dbR7m9g3gbNMPzFE85L0QgsgdeGHXCfz4D3eo",
+  "artist": "Arwyn"
+ },
+ "FAYC": {
+  "image": "https://arweave.net/l8W6uy8C0tCF2lLOYfpvlk0ikX9MJCqqEHDqseNZeCE",
+  "artist": "ARWYN",
+  "note": "Recovered from Arweave after easyasset.art went offline (manifest qYjpMVfQKtckIM0fDdqYUSf5ri7Gv_BDbNRx3qqdUOU, file 3lglc6_image.png)."
+ },
+ "FAKEGOAT": {
+  "image": "https://arweave.net/s_ExkWaND4BKITTYCx9-Hg2F5xCOUd0NUuyP3ot1UhY",
+  "artist": "Arwyn",
+  "note": "Recovered from Arweave after easyasset.art went offline (manifest x9lePC5SB7f9IxURNAZ1asxtrEeCngbYh8vNkR754DI, file 19f6hs_hires.png)."
+ }
+}

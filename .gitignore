@@ -1,0 +1,26 @@
+# Build output. Regenerated deterministically by `npm run ship`, and a 1.3 MB
+# generated file rewritten on every release would bloat history for no benefit.
+dist/
+
+# Dependencies. This project has none at runtime; nothing here should appear.
+node_modules/
+
+# Local preview and editor cruft
+.DS_Store
+*.log
+.vercel/
+.idea/
+.vscode/
+
+# NOTE ON WHAT IS DELIBERATELY *NOT* IGNORED
+#
+# data/ and public/data/ are tracked on purpose. They are the indexed layer, and
+# .github/workflows/refresh.yml commits them after each scheduled run — that is
+# how the deployed site gets fresh data. Regenerating them costs thousands of
+# upstream requests and roughly twenty minutes.
+#
+# data/kaleidoscope-cache.json is tracked for the same reason. It is nominally a
+# cache, but rate limiting is a real and documented failure mode here (a throttled
+# run once wrote a broken leaderboard over a good one), so carrying the cache
+# between CI runs is worth more than a slimmer repository. Revisit if history
+# growth becomes a problem.

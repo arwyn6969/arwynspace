@@ -1,0 +1,25 @@
+{
+  "artistName": "Arwyn",
+  "tagline": "Digital art on Bitcoin — Counterparty assets and Bitcoin Stamps",
+  "_comment": "All wallets belong to the artist. Assets are indexed by ISSUANCE, not ownership, because several of these wallets show issuance history with zero current holdings — work created there and later moved. Every address also goes into excludeFromLeaderboard so the artist never appears as a collector of their own work.",
+  "addresses": [
+    { "address": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j", "label": "Primary" },
+    { "address": "16ty9iygA4N1uw8Tu7ssGV5SeHscAAXjXP", "label": "Wallet 2" },
+    { "address": "17bP2D968mUtYWJHgLKaCC7cPFJ9L5jm9f", "label": "Wallet 3" },
+    { "address": "1BepCXzZ7RRcPaqUdvBp2jvkJcaRvHMGKz", "label": "Wallet 4" },
+    { "address": "1GLtNBpGqpNLGfH5iQHLipVqiVu6LeqSin", "label": "Wallet 5" },
+    { "address": "1GZsmqM5PFBytkC81JxcSWDU5QzNwaCs2M", "label": "Wallet 6" },
+    { "address": "1MNVKFunSKArs3ya776VoALR6Lv1eu6yUt", "label": "Wallet 7" }
+  ],
+  "excludeFromLeaderboard": [
+    "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j",
+    "16ty9iygA4N1uw8Tu7ssGV5SeHscAAXjXP",
+    "17bP2D968mUtYWJHgLKaCC7cPFJ9L5jm9f",
+    "1BepCXzZ7RRcPaqUdvBp2jvkJcaRvHMGKz",
+    "1GLtNBpGqpNLGfH5iQHLipVqiVu6LeqSin",
+    "1GZsmqM5PFBytkC81JxcSWDU5QzNwaCs2M",
+    "1MNVKFunSKArs3ya776VoALR6Lv1eu6yUt",
+    "1111111111111111111114oLvT2",
+    "1CounterpartyXXXXXXXXXXXXXXXUWLpVr"
+  ]
+}
