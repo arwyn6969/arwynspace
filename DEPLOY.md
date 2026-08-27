@@ -52,10 +52,17 @@ An alternative (or addition) to Vercel. `wrangler.toml` and `public/_headers` ar
 | Build command | `npm run build` |
 | Output directory | `public` |
 | Install command | *(leave empty — there are no dependencies)* |
+| Node version | pinned to 22 by `.node-version` — see below |
 
 That is the whole configuration. It works because the client falls back from `/api/*` to the
 committed snapshots in `public/data/`, so every view renders without a single function
 deployed. Hash routing (`#/collected`) means no SPA rewrite rule is needed either.
+
+**Do not delete `.node-version`.** Every script uses `import.meta.dirname`, which arrived in
+Node 20.11. Cloudflare Pages has historically defaulted to Node 18, where it is `undefined`, so
+`path.resolve(import.meta.dirname, "..")` throws and the build fails with a message that points
+nowhere near the cause. `package.json` declares `engines: >=20`, but that is a declaration — it
+does not tell the host which Node to use.
 
 Do **not** set the build command to `npm run ship`. That additionally bundles
 `dist/gallery.html`, which is gitignored and is not what Pages serves.

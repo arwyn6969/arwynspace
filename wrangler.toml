@@ -35,6 +35,15 @@ name = "arwynspace"
 pages_build_output_dir = "public"
 compatibility_date = "2026-08-27"
 
+# NODE VERSION IS PINNED IN .node-version (22), AND IT HAS TO BE.
+#
+# Every script here uses `import.meta.dirname`, which landed in Node 20.11.
+# Cloudflare Pages has historically defaulted to Node 18, where that property is
+# undefined — so `path.resolve(import.meta.dirname, "..")` throws and the build
+# fails with an error that points nowhere near the real cause. Pages reads
+# .node-version; do not delete it. package.json declares engines >=20, but that is
+# a declaration, not an instruction to the host.
+#
 # Build command for the Pages dashboard / CI:
 #
 #   npm run build
