@@ -1,7 +1,7 @@
 {
- "generatedAt": "2026-08-27T17:15:33.773Z",
- "assetsCovered": 442,
- "assetsRecorded": 489,
+ "generatedAt": "2026-08-27T20:45:05.888Z",
+ "assetsCovered": 467,
+ "assetsRecorded": 490,
  "byAsset": {
   "GLAIRPEPE": {
    "count": 2,
@@ -149,7 +149,7 @@
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "xcp failed /v2/assets/FAKASTAMPS/holders?limit=500: proxy http 408",
+   "reason": "xcp failed /v2/assets/FAKASTAMPS/holders?limit=500: proxy http 522",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -192,7 +192,7 @@
     },
     {
      "address": "14udFRS6AdnQNJZn9RZ1H3LtSqP7k2UeTC",
-     "quantity": 365279.34780707
+     "quantity": 365279.34780596
     },
     {
      "address": "1AkGM1vi7mQqLZdYa95RTPb5XcRiYrhTdy",
@@ -235,13 +235,13 @@
    "externalHolders": 140,
    "artistHolders": 1,
    "burnHolders": 0,
-   "externalUnits": 3423080.383615594,
-   "artistUnits": 65576919.61637455,
+   "externalUnits": 3423080.3836144838,
+   "artistUnits": 65576919.61637566,
    "burnUnits": 0,
-   "reachPct": 4.960986063211713,
-   "top1Share": 22.396999020812228,
-   "top5Share": 66.53202975926911,
-   "hhi": 1071.3161181945165,
+   "reachPct": 4.960986063210105,
+   "top1Share": 22.396999020819493,
+   "top5Share": 66.53202975925826,
+   "hhi": 1071.3161181945218,
    "source": "stampchain"
   },
   "A2357688189236371386": {
@@ -1581,21 +1581,70 @@
    "source": "stampchain"
   },
   "A18429515139172954198": {
-   "count": null,
-   "total": null,
-   "top": [],
-   "holderDataOk": false,
-   "reason": "xcp failed /v2/assets/A18429515139172954198/holders?limit=500: proxy http 502",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
-   "top1Share": null,
-   "top5Share": null,
-   "hhi": null
+   "count": 46,
+   "total": 47,
+   "top": [
+    {
+     "address": "bc1qmufldvqr5rhzq2wy4spk6mlamtejt9pguumheu",
+     "quantity": 21
+    },
+    {
+     "address": "141U9An1EmNcNWrBtEPJJMyNwxERZTDakU",
+     "quantity": 13
+    },
+    {
+     "address": "1D3MdKkZocRxA42Q5K5xcHJcjAJmRuaxYA",
+     "quantity": 9
+    },
+    {
+     "address": "16NQ1wpLkxZiRQBz7kuu4hCP2wceUnoKDY",
+     "quantity": 8
+    },
+    {
+     "address": "13mXdiMzXyJZQ48K6cHMBso1qkcG7Ujgy3",
+     "quantity": 6
+    },
+    {
+     "address": "16EHGoD1gtcE53TWtkKrgXpzmv7CK3mxkm",
+     "quantity": 4
+    },
+    {
+     "address": "145uc1qBVTBvvQGuXCCw8z77bLJzTzDbPY",
+     "quantity": 4
+    },
+    {
+     "address": "1Cw7uQakqTLnch4HdGAiGdcBk2ynKV8T3s",
+     "quantity": 3
+    },
+    {
+     "address": "bc1qensrsjxp4gw7gmdef9p3x30y4fmekpqcax5895",
+     "quantity": 3
+    },
+    {
+     "address": "bc1qwjxx2kkatn6x7we8d3zw6rhmympnha6tkcp7ls",
+     "quantity": 3
+    },
+    {
+     "address": "1ALXrsNxpo3uJsjNWSjGiKGWsqMtWtZsr5",
+     "quantity": 3
+    },
+    {
+     "address": "1HaDmPsQ44VKfgrd2sWZKAnw11xPjDXYrN",
+     "quantity": 2
+    }
+   ],
+   "holderDataOk": true,
+   "externalHolders": 46,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 119,
+   "artistUnits": 168,
+   "burnUnits": 0,
+   "reachPct": 41.46341463414634,
+   "top1Share": 17.647058823529413,
+   "top5Share": 47.89915966386555,
+   "hhi": 646.1408092648828,
+   "source": "stampchain"
   },
   "A8718617862755322589": {
    "count": 0,
@@ -1780,7 +1829,7 @@
    "top1Share": null,
    "top5Share": null,
    "hhi": null,
-   "source": "stampchain"
+   "source": "counterparty"
   },
   "A17962482295965879603": {
    "count": 1,
@@ -2713,21 +2762,21 @@
    "source": "stampchain"
   },
   "A17857385613548230564": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 1,
    "top": [],
-   "holderDataOk": false,
-   "reason": "xcp failed /v2/assets/A17857385613548230564/holders?limit=500: proxy http 522",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 1,
+   "burnUnits": 0,
+   "reachPct": 0,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "stampchain"
   },
   "A5847129133058374800": {
    "count": 0,
@@ -2871,21 +2920,21 @@
    "source": "stampchain"
   },
   "A10069919327399134326": {
-   "count": 0,
-   "total": 1,
+   "count": null,
+   "total": null,
    "top": [],
-   "holderDataOk": true,
-   "externalHolders": 0,
-   "artistHolders": 1,
-   "burnHolders": 0,
-   "externalUnits": 0,
-   "artistUnits": 1,
-   "burnUnits": 0,
-   "reachPct": 0,
+   "holderDataOk": false,
+   "reason": "xcp failed /v2/assets/A10069919327399134326/holders?limit=500: proxy http 522",
+   "externalHolders": null,
+   "artistHolders": null,
+   "burnHolders": null,
+   "externalUnits": null,
+   "artistUnits": null,
+   "burnUnits": null,
+   "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null,
-   "source": "stampchain"
+   "hhi": null
   },
   "A4759365194547896754": {
    "count": 0,
@@ -3029,21 +3078,21 @@
    "source": "stampchain"
   },
   "A13104780081858984616": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 1,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 1,
+   "burnUnits": 0,
+   "reachPct": 0,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "A2971648903657882226": {
    "count": 0,
@@ -3644,21 +3693,21 @@
    "source": "stampchain"
   },
   "A13304694387237003784": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 1,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 1,
+   "burnUnits": 0,
+   "reachPct": 0,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "stampchain"
   },
   "A13617919507845312933": {
    "count": 0,
@@ -3695,21 +3744,21 @@
    "source": "stampchain"
   },
   "A1399625988304589428": {
-   "count": 0,
-   "total": 1,
+   "count": null,
+   "total": null,
    "top": [],
-   "holderDataOk": true,
-   "externalHolders": 0,
-   "artistHolders": 1,
-   "burnHolders": 0,
-   "externalUnits": 0,
-   "artistUnits": 1,
-   "burnUnits": 0,
-   "reachPct": 0,
+   "holderDataOk": false,
+   "reason": "xcp failed /v2/assets/A1399625988304589428/holders?limit=500: proxy http 522",
+   "externalHolders": null,
+   "artistHolders": null,
+   "burnHolders": null,
+   "externalUnits": null,
+   "artistUnits": null,
+   "burnUnits": null,
+   "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null,
-   "source": "stampchain"
+   "hhi": null
   },
   "A16385037714099053639": {
    "count": 0,
@@ -3801,7 +3850,7 @@
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
+   "reason": "xcp failed /v2/assets/A2702859552655055255/holders?limit=500: proxy http 522",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -5155,7 +5204,7 @@
    "top1Share": null,
    "top5Share": null,
    "hhi": null,
-   "source": "stampchain"
+   "source": "counterparty"
   },
   "A2762776399520583842": {
    "count": 29,
@@ -5355,21 +5404,46 @@
    "source": "stampchain"
   },
   "A3642333115660872667": {
-   "count": null,
-   "total": null,
-   "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
-   "top1Share": null,
-   "top5Share": null,
-   "hhi": null
+   "count": 6,
+   "total": 7,
+   "top": [
+    {
+     "address": "14cvk4p4LN2Lpn4AzkjUHDr7A2tKerMhzk",
+     "quantity": 1
+    },
+    {
+     "address": "1GotRejB6XsGgMsM79TvcypeanDJRJbMtg",
+     "quantity": 1
+    },
+    {
+     "address": "1LxW4z23GF3sG9tWhaUtTJd1UHcKu7UiY7",
+     "quantity": 1
+    },
+    {
+     "address": "bc1q9z6te6zm9rpvx07sfg45ga0j83gms6pyufhhpl",
+     "quantity": 1
+    },
+    {
+     "address": "1GoCcYoAaAb6WGqXciYkLHs5gB8vZqo5n7",
+     "quantity": 1
+    },
+    {
+     "address": "1AQc4LrZwx7A3HL583kGVPax1gzjkcamim",
+     "quantity": 1
+    }
+   ],
+   "holderDataOk": true,
+   "externalHolders": 6,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 6,
+   "artistUnits": 22,
+   "burnUnits": 0,
+   "reachPct": 21.428571428571427,
+   "top1Share": 16.666666666666664,
+   "top5Share": 83.33333333333334,
+   "hhi": 1666.6666666666665,
+   "source": "stampchain"
   },
   "A3659448891208687718": {
    "count": 4,
@@ -7046,21 +7120,21 @@
    "source": "stampchain"
   },
   "EREBUSPEPE": {
-   "count": 0,
-   "total": 1,
+   "count": null,
+   "total": null,
    "top": [],
-   "holderDataOk": true,
-   "externalHolders": 0,
-   "artistHolders": 1,
-   "burnHolders": 0,
-   "externalUnits": 0,
-   "artistUnits": 1,
-   "burnUnits": 0,
-   "reachPct": 0,
+   "holderDataOk": false,
+   "reason": "xcp failed /v2/assets/EREBUSPEPE/holders?limit=500: proxy http 522",
+   "externalHolders": null,
+   "artistHolders": null,
+   "burnHolders": null,
+   "externalUnits": null,
+   "artistUnits": null,
+   "burnUnits": null,
+   "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null,
-   "source": "stampchain"
+   "hhi": null
   },
   "FAKEAIR": {
    "count": 0,
@@ -7426,21 +7500,21 @@
    "source": "stampchain"
   },
   "FLOCKMUSIC": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 1,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 1000,
+   "burnUnits": 0,
+   "reachPct": 0,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "stampchain"
   },
   "FLOCKPARTY": {
    "count": 2,
@@ -7674,21 +7748,21 @@
    "source": "stampchain"
   },
   "FREEWILLY": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "FRESHKEKS": {
    "count": 0,
@@ -8929,21 +9003,21 @@
    "source": "stampchain"
   },
   "NFTV": {
-   "count": 0,
-   "total": 1,
+   "count": null,
+   "total": null,
    "top": [],
-   "holderDataOk": true,
-   "externalHolders": 0,
-   "artistHolders": 1,
-   "burnHolders": 0,
-   "externalUnits": 0,
-   "artistUnits": 420,
-   "burnUnits": 0,
-   "reachPct": 0,
+   "holderDataOk": false,
+   "reason": "xcp failed /v2/assets/NFTV/holders?limit=500: proxy http 520",
+   "externalHolders": null,
+   "artistHolders": null,
+   "burnHolders": null,
+   "externalUnits": null,
+   "artistUnits": null,
+   "burnUnits": null,
+   "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null,
-   "source": "stampchain"
+   "hhi": null
   },
   "NIGHTSATORBI": {
    "count": 0,
@@ -9123,21 +9197,21 @@
    "source": "stampchain"
   },
   "ORBIBUCKS": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 1,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 1,
+   "burnUnits": 0,
+   "reachPct": 0,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "stampchain"
   },
   "ORBILAND": {
    "count": 0,
@@ -10124,7 +10198,7 @@
    "top1Share": null,
    "top5Share": null,
    "hhi": null,
-   "source": "stampchain"
+   "source": "counterparty"
   },
   "PFUNKPEPE": {
    "count": 0,
@@ -10355,21 +10429,21 @@
    "source": "stampchain"
   },
   "RUNORD": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 1,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
-   "reachPct": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 1,
+   "burnUnits": 0,
+   "reachPct": 0,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "stampchain"
   },
   "RUPERTPEPE": {
    "count": 0,
@@ -11090,7 +11164,7 @@
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
+   "reason": "xcp failed /v2/assets/SSSXX/holders?limit=500: proxy http 500",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -11103,215 +11177,215 @@
    "hhi": null
   },
   "PEPECRUSHER": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "PEPEBRADOCK": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "BAPEPEHOMET": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "PEPEMCARTNEY": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "SHADILAYPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "PEPEFOLEY": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "PEPEHARRISON": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "LENNONPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "NOUNPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "GRIZZLYPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "PEPEGREY": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "PEPEKENT": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "DIANAPEPE": {
    "count": null,
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
+   "reason": "xcp failed /v2/assets/DIANAPEPE/holders?limit=500: proxy http 500",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -11324,130 +11398,130 @@
    "hhi": null
   },
   "NUPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "NAUNETPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "HEHU": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "KEKUIPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "KEKUITPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "QERHPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "QERHETPEPE": {
-   "count": null,
-   "total": null,
+   "count": 0,
+   "total": 0,
    "top": [],
-   "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
-   "externalHolders": null,
-   "artistHolders": null,
-   "burnHolders": null,
-   "externalUnits": null,
-   "artistUnits": null,
-   "burnUnits": null,
+   "holderDataOk": true,
+   "externalHolders": 0,
+   "artistHolders": 0,
+   "burnHolders": 0,
+   "externalUnits": 0,
+   "artistUnits": 0,
+   "burnUnits": 0,
    "reachPct": null,
    "top1Share": null,
    "top5Share": null,
-   "hhi": null
+   "hhi": null,
+   "source": "counterparty"
   },
   "BARRABASPEPE": {
    "count": null,
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
+   "reason": "xcp failed /v2/assets/BARRABASPEPE/holders?limit=500: proxy http 522",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -11464,7 +11538,7 @@
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
+   "reason": "xcp failed /v2/assets/PEPESNITCH/holders?limit=500: proxy http 522",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -11481,7 +11555,7 @@
    "total": null,
    "top": [],
    "holderDataOk": false,
-   "reason": "counterparty unreachable (circuit open)",
+   "reason": "xcp failed /v2/assets/PEPEWEAR/holders?limit=500: proxy http 522",
    "externalHolders": null,
    "artistHolders": null,
    "burnHolders": null,
@@ -13353,6 +13427,36 @@
    "top5Share": null,
    "hhi": null,
    "source": "stampchain"
+  },
+  "SGONEGREY": {
+   "count": 3,
+   "total": 4,
+   "top": [
+    {
+     "address": "14udFRS6AdnQNJZn9RZ1H3LtSqP7k2UeTC",
+     "quantity": 113
+    },
+    {
+     "address": "1rZfwk92GujpD9gqTeGusrvgRS7Eu8uhV",
+     "quantity": 42
+    },
+    {
+     "address": "bc1qfnapw9jp7702gm8vy9cge9pyff4mgzzuevt00t",
+     "quantity": 2
+    }
+   ],
+   "holderDataOk": true,
+   "externalHolders": 3,
+   "artistHolders": 1,
+   "burnHolders": 0,
+   "externalUnits": 157,
+   "artistUnits": 622,
+   "burnUnits": 0,
+   "reachPct": 20.154043645699616,
+   "top1Share": 71.97452229299363,
+   "top5Share": 100,
+   "hhi": 5897.6023368087945,
+   "source": "stampchain"
   }
  },
  "leaderboard": [
@@ -13426,9 +13530,9 @@
   },
   {
    "address": "1AQc4LrZwx7A3HL583kGVPax1gzjkcamim",
-   "distinctAssets": 52,
-   "editions": 307168,
-   "totalUnits": 310579.12914001,
+   "distinctAssets": 53,
+   "editions": 307169,
+   "totalUnits": 310580.12914001,
    "assets": [
     "PUDSEC",
     "TREEOFBRBJP",
@@ -13447,6 +13551,7 @@
     "A16728755601195242290",
     "A17121777564858109464",
     "A2762776399520583842",
+    "A3642333115660872667",
     "A4246082963349843246",
     "A7682980478693149380",
     "A9816334573873528313",
@@ -13486,9 +13591,9 @@
   },
   {
    "address": "bc1q9z6te6zm9rpvx07sfg45ga0j83gms6pyufhhpl",
-   "distinctAssets": 48,
-   "editions": 3514254,
-   "totalUnits": 3558545.7928058696,
+   "distinctAssets": 49,
+   "editions": 3514255,
+   "totalUnits": 3558546.7928058696,
    "assets": [
     "RAREBEAR",
     "PUDSEC",
@@ -13507,6 +13612,7 @@
     "A16728755601195242290",
     "A2762776399520583842",
     "A2990856786083895944",
+    "A3642333115660872667",
     "A7234513765793932670",
     "A9836658351052141895",
     "CANHEAD",
@@ -13542,9 +13648,9 @@
   },
   {
    "address": "14udFRS6AdnQNJZn9RZ1H3LtSqP7k2UeTC",
-   "distinctAssets": 40,
-   "editions": 32619467,
-   "totalUnits": 32984746.356834132,
+   "distinctAssets": 42,
+   "editions": 32619582,
+   "totalUnits": 32984861.356833022,
    "assets": [
     "GLAIRPEPE",
     "RAREBEAR",
@@ -13558,6 +13664,7 @@
     "A124073621844572487",
     "MTBALD",
     "HAIRKEVIN",
+    "A18429515139172954198",
     "A5110356191816427873",
     "A3935281487588899130",
     "PEPESTAMPOR",
@@ -13585,14 +13692,15 @@
     "CHOOSEMIKE",
     "HHGTTSHADILY",
     "OCOCERAR",
-    "RAREBALD"
+    "RAREBALD",
+    "SGONEGREY"
    ]
   },
   {
    "address": "14cvk4p4LN2Lpn4AzkjUHDr7A2tKerMhzk",
-   "distinctAssets": 37,
-   "editions": 11335236,
-   "totalUnits": 11461181.671612,
+   "distinctAssets": 38,
+   "editions": 11335237,
+   "totalUnits": 11461182.671612,
    "assets": [
     "PUDSEC",
     "A244526375951753211",
@@ -13606,6 +13714,7 @@
     "A16728755601195242290",
     "A17176017992433601881",
     "A17783604505152166392",
+    "A3642333115660872667",
     "A4246082963349843246",
     "A7682980478693149380",
     "A9076275087923551338",
@@ -13635,11 +13744,12 @@
   },
   {
    "address": "13HHKVNFBrkfor66LPMbSfvDVNKvhPmSGH",
-   "distinctAssets": 32,
-   "editions": 42076,
-   "totalUnits": 42542.67034001,
+   "distinctAssets": 33,
+   "editions": 42077,
+   "totalUnits": 42543.67034001,
    "assets": [
     "PUDSEC",
+    "A18429515139172954198",
     "A244526375951753211",
     "A11008010207784897333",
     "A1183107931818714146",
@@ -13675,9 +13785,9 @@
   },
   {
    "address": "1GoCcYoAaAb6WGqXciYkLHs5gB8vZqo5n7",
-   "distinctAssets": 28,
-   "editions": 8600377,
-   "totalUnits": 8695935.965336,
+   "distinctAssets": 29,
+   "editions": 8600378,
+   "totalUnits": 8695936.965336,
    "assets": [
     "PUDSEC",
     "ISITPEPE",
@@ -13689,6 +13799,7 @@
     "A12684798470528077687",
     "A12745715755167507665",
     "A16728755601195242290",
+    "A3642333115660872667",
     "A6289671204246359055",
     "A920272242107890497",
     "A9816334573873528313",
@@ -13711,12 +13822,13 @@
   },
   {
    "address": "1NoqqWeLXAnCGmP2ZDsuN8ekHJ61ZaE3JH",
-   "distinctAssets": 28,
-   "editions": 111126,
-   "totalUnits": 112359.34031999999,
+   "distinctAssets": 29,
+   "editions": 111127,
+   "totalUnits": 112360.34031999999,
    "assets": [
     "PUDSEC",
     "UCITCOIN",
+    "A18429515139172954198",
     "A1419435205626267468",
     "A17121777564858109464",
     "A2762776399520583842",
@@ -13780,6 +13892,38 @@
    ]
   },
   {
+   "address": "1ALXrsNxpo3uJsjNWSjGiKGWsqMtWtZsr5",
+   "distinctAssets": 24,
+   "editions": 14235558,
+   "totalUnits": 14393730.41542673,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "A10733146730093254387",
+    "A12442906741100342510",
+    "A13496171715362748532",
+    "A15610664756579074592",
+    "A17176017992433601881",
+    "A9816334573873528313",
+    "CHONGALIEN",
+    "CSHGRBORANGE",
+    "DANKROSECASH",
+    "ECUADORIAN",
+    "FAKEFLOONEY",
+    "FAKEKYCPEPE",
+    "FEELSWEIRD",
+    "GRETARRESTED",
+    "HELOBOSHI",
+    "HUNTERSPEPE",
+    "LUCKYBOSHI",
+    "NOTAMIKAHEAD",
+    "ORDEROFBOSHI",
+    "PMOBOSHI",
+    "STILLBOSHI",
+    "THEHAND"
+   ]
+  },
+  {
    "address": "1M7HN2wh32YU4AMfMatrAnCcdyfmuow7V3",
    "distinctAssets": 24,
    "editions": 111057,
@@ -13812,34 +13956,34 @@
    ]
   },
   {
-   "address": "1ALXrsNxpo3uJsjNWSjGiKGWsqMtWtZsr5",
+   "address": "1LxW4z23GF3sG9tWhaUtTJd1UHcKu7UiY7",
    "distinctAssets": 23,
-   "editions": 14235555,
-   "totalUnits": 14393727.41542673,
+   "editions": 1000051,
+   "totalUnits": 1011162.23400003,
    "assets": [
     "PUDSEC",
-    "A10733146730093254387",
+    "UCITCOIN",
     "A12442906741100342510",
-    "A13496171715362748532",
-    "A15610664756579074592",
-    "A17176017992433601881",
-    "A9816334573873528313",
-    "CHONGALIEN",
+    "A16416951787367934532",
+    "A16728755601195242290",
+    "A17121777564858109464",
+    "A2762776399520583842",
+    "A3642333115660872667",
+    "A4737418521894596305",
+    "BITMAPWOJAK",
     "CSHGRBORANGE",
     "DANKROSECASH",
-    "ECUADORIAN",
     "FAKEFLOONEY",
-    "FAKEKYCPEPE",
-    "FEELSWEIRD",
-    "GRETARRESTED",
-    "HELOBOSHI",
-    "HUNTERSPEPE",
-    "LUCKYBOSHI",
-    "NOTAMIKAHEAD",
-    "ORDEROFBOSHI",
-    "PMOBOSHI",
-    "STILLBOSHI",
-    "THEHAND"
+    "FLOCKPARTY",
+    "FLOONEYASHI",
+    "FLOONEYHEADS",
+    "FLOONMAS",
+    "FRISBEEGRAB",
+    "MDRNFLOONEY",
+    "TESTLIFE",
+    "WEAREALLJOEY",
+    "BOOONEYBIN",
+    "HHGTTSHADILY"
    ]
   },
   {
@@ -13901,36 +14045,6 @@
     "TESTLIFE",
     "WEAREALLJOEY",
     "GUIDEFORKS"
-   ]
-  },
-  {
-   "address": "1LxW4z23GF3sG9tWhaUtTJd1UHcKu7UiY7",
-   "distinctAssets": 22,
-   "editions": 1000050,
-   "totalUnits": 1011161.23400003,
-   "assets": [
-    "PUDSEC",
-    "UCITCOIN",
-    "A12442906741100342510",
-    "A16416951787367934532",
-    "A16728755601195242290",
-    "A17121777564858109464",
-    "A2762776399520583842",
-    "A4737418521894596305",
-    "BITMAPWOJAK",
-    "CSHGRBORANGE",
-    "DANKROSECASH",
-    "FAKEFLOONEY",
-    "FLOCKPARTY",
-    "FLOONEYASHI",
-    "FLOONEYHEADS",
-    "FLOONMAS",
-    "FRISBEEGRAB",
-    "MDRNFLOONEY",
-    "TESTLIFE",
-    "WEAREALLJOEY",
-    "BOOONEYBIN",
-    "HHGTTSHADILY"
    ]
   },
   {
@@ -14096,6 +14210,30 @@
    ]
   },
   {
+   "address": "1GotRejB6XsGgMsM79TvcypeanDJRJbMtg",
+   "distinctAssets": 16,
+   "editions": 1000014,
+   "totalUnits": 1011125.132,
+   "assets": [
+    "PUDSEC",
+    "A12442906741100342510",
+    "A16416951787367934532",
+    "A16728755601195242290",
+    "A3642333115660872667",
+    "BASQEQ",
+    "CSHGRBORANGE",
+    "DANKROSECASH",
+    "FLOONEYASHI",
+    "FLOONEYHEADS",
+    "FLOONMAS",
+    "FRISBEEGRAB",
+    "GRETARRESTED",
+    "WEAREALLJOEY",
+    "BOOONEYBIN",
+    "HHGTTSHADILY"
+   ]
+  },
+  {
    "address": "12SSq5HBDBdDdGESJFTBML63N9ZVbRqju8",
    "distinctAssets": 16,
    "editions": 123015,
@@ -14164,29 +14302,6 @@
     "MUSKTUPEPE",
     "PEPESABINA",
     "TESTLIFE"
-   ]
-  },
-  {
-   "address": "1GotRejB6XsGgMsM79TvcypeanDJRJbMtg",
-   "distinctAssets": 15,
-   "editions": 1000013,
-   "totalUnits": 1011124.132,
-   "assets": [
-    "PUDSEC",
-    "A12442906741100342510",
-    "A16416951787367934532",
-    "A16728755601195242290",
-    "BASQEQ",
-    "CSHGRBORANGE",
-    "DANKROSECASH",
-    "FLOONEYASHI",
-    "FLOONEYHEADS",
-    "FLOONMAS",
-    "FRISBEEGRAB",
-    "GRETARRESTED",
-    "WEAREALLJOEY",
-    "BOOONEYBIN",
-    "HHGTTSHADILY"
    ]
   },
   {
@@ -14430,6 +14545,27 @@
    ]
   },
   {
+   "address": "13mXdiMzXyJZQ48K6cHMBso1qkcG7Ujgy3",
+   "distinctAssets": 13,
+   "editions": 68058,
+   "totalUnits": 68813.55616,
+   "assets": [
+    "PUDSEC",
+    "A124073621844572487",
+    "MTBALD",
+    "HAIRKEVIN",
+    "A18429515139172954198",
+    "A3935281487588899130",
+    "A1419435205626267468",
+    "A7682980478693149380",
+    "DANKROSECASH",
+    "FAKEFLOONEY",
+    "FAKESPACEDUB",
+    "MONKEYLOVERS",
+    "NOTAPEPEMOTO"
+   ]
+  },
+  {
    "address": "bc1ql9wn97d2xhpkpvvxldhg82kr6eplsv43j0h62q",
    "distinctAssets": 12,
    "editions": 333074,
@@ -14487,26 +14623,6 @@
     "PEPENOUN",
     "UNIPEPECORN",
     "A1720160397303662600"
-   ]
-  },
-  {
-   "address": "13mXdiMzXyJZQ48K6cHMBso1qkcG7Ujgy3",
-   "distinctAssets": 12,
-   "editions": 68052,
-   "totalUnits": 68807.55616,
-   "assets": [
-    "PUDSEC",
-    "A124073621844572487",
-    "MTBALD",
-    "HAIRKEVIN",
-    "A3935281487588899130",
-    "A1419435205626267468",
-    "A7682980478693149380",
-    "DANKROSECASH",
-    "FAKEFLOONEY",
-    "FAKESPACEDUB",
-    "MONKEYLOVERS",
-    "NOTAPEPEMOTO"
    ]
   },
   {
@@ -14667,6 +14783,44 @@
    ]
   },
   {
+   "address": "145uc1qBVTBvvQGuXCCw8z77bLJzTzDbPY",
+   "distinctAssets": 11,
+   "editions": 228,
+   "totalUnits": 228,
+   "assets": [
+    "WHITEYWOJAK",
+    "JUANTASTIC",
+    "A637044214763826685",
+    "A124073621844572487",
+    "MTBALD",
+    "A18429515139172954198",
+    "A17962482295965879603",
+    "A4434373010677123469",
+    "A5368504630071015021",
+    "SHREMBOSHI",
+    "TESTLIFE"
+   ]
+  },
+  {
+   "address": "15EFF1BFgjvAQmGd8b3o5eUToRvycMB75a",
+   "distinctAssets": 11,
+   "editions": 16,
+   "totalUnits": 16.00000001,
+   "assets": [
+    "MTBALD",
+    "A7558311044173685461",
+    "A18429515139172954198",
+    "A3935281487588899130",
+    "A1419435205626267468",
+    "A7682980478693149380",
+    "FAKEFLOONEY",
+    "FAKESPACEDUB",
+    "MONKEYLOVERS",
+    "UNIPEPECORN",
+    "A1720160397303662600"
+   ]
+  },
+  {
    "address": "1GPjNUCGC1d2nq6p8tECQZosTeRG41akh3",
    "distinctAssets": 11,
    "editions": 10,
@@ -14742,6 +14896,24 @@
    ]
   },
   {
+   "address": "1WweVUK8kLmSNt6yKKqwVxch3Z7Lw5HAY",
+   "distinctAssets": 10,
+   "editions": 1084009,
+   "totalUnits": 1096053.45738,
+   "assets": [
+    "PUDSEC",
+    "HAIRKEVIN",
+    "A18429515139172954198",
+    "A244526375951753211",
+    "A1067098648226204654",
+    "A15610664756579074592",
+    "DANKROSECASH",
+    "FAKEFLOONEY",
+    "A5177456513884485295",
+    "CARPOPODITE"
+   ]
+  },
+  {
    "address": "16nZB6JEMtxtaXp72gcERv63WocxMhHRwm",
    "distinctAssets": 10,
    "editions": 222016,
@@ -14814,39 +14986,21 @@
    ]
   },
   {
-   "address": "145uc1qBVTBvvQGuXCCw8z77bLJzTzDbPY",
+   "address": "13TjDyWFsQGsNXGxYKU5ewjTyYUMrFHvac",
    "distinctAssets": 10,
-   "editions": 224,
-   "totalUnits": 224,
+   "editions": 42016,
+   "totalUnits": 42482.67034,
    "assets": [
-    "WHITEYWOJAK",
-    "JUANTASTIC",
-    "A637044214763826685",
-    "A124073621844572487",
-    "MTBALD",
-    "A17962482295965879603",
-    "A4434373010677123469",
-    "A5368504630071015021",
-    "SHREMBOSHI",
-    "TESTLIFE"
-   ]
-  },
-  {
-   "address": "15EFF1BFgjvAQmGd8b3o5eUToRvycMB75a",
-   "distinctAssets": 10,
-   "editions": 15,
-   "totalUnits": 15.00000001,
-   "assets": [
-    "MTBALD",
+    "PUDSEC",
+    "UCITCOIN",
     "A7558311044173685461",
+    "A18429515139172954198",
     "A3935281487588899130",
-    "A1419435205626267468",
-    "A7682980478693149380",
+    "A244526375951753211",
+    "A15610664756579074592",
+    "DANKROSECASH",
     "FAKEFLOONEY",
-    "FAKESPACEDUB",
-    "MONKEYLOVERS",
-    "UNIPEPECORN",
-    "A1720160397303662600"
+    "A5177456513884485295"
    ]
   },
   {
@@ -14956,23 +15110,6 @@
    ]
   },
   {
-   "address": "1WweVUK8kLmSNt6yKKqwVxch3Z7Lw5HAY",
-   "distinctAssets": 9,
-   "editions": 1084007,
-   "totalUnits": 1096051.45738,
-   "assets": [
-    "PUDSEC",
-    "HAIRKEVIN",
-    "A244526375951753211",
-    "A1067098648226204654",
-    "A15610664756579074592",
-    "DANKROSECASH",
-    "FAKEFLOONEY",
-    "A5177456513884485295",
-    "CARPOPODITE"
-   ]
-  },
-  {
    "address": "1NPevxGfUnaeD1PPGdemsTbx74RS8YsUB4",
    "distinctAssets": 9,
    "editions": 444075,
@@ -14987,6 +15124,23 @@
     "JORDANBPEPE",
     "PEPENOUN",
     "A1720160397303662600"
+   ]
+  },
+  {
+   "address": "bc1qensrsjxp4gw7gmdef9p3x30y4fmekpqcax5895",
+   "distinctAssets": 9,
+   "editions": 126011,
+   "totalUnits": 127411.00112,
+   "assets": [
+    "PUDSEC",
+    "MTBALD",
+    "A18429515139172954198",
+    "A1419435205626267468",
+    "A7682980478693149380",
+    "DANKROSECASH",
+    "FAKEFLOONEY",
+    "FAKESPACEDUB",
+    "MONKEYLOVERS"
    ]
   },
   {
@@ -15075,6 +15229,23 @@
    ]
   },
   {
+   "address": "1BLq5n1i6t7Z2sCAzF9mUw64KZLRmoddoP",
+   "distinctAssets": 9,
+   "editions": 100008,
+   "totalUnits": 101119.112,
+   "assets": [
+    "PUDSEC",
+    "HAIRKEVIN",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FLOCKPARTY",
+    "HUNTERSPEPE",
+    "PEPECARLIN",
+    "QBERTPEPE",
+    "A1720160397303662600"
+   ]
+  },
+  {
    "address": "16EpqwHTKvuFBc8trR4rHBaJhV7f1Y8h8E",
    "distinctAssets": 9,
    "editions": 91011,
@@ -15089,23 +15260,6 @@
     "DANKROSECASH",
     "FAKESPACEDUB",
     "STILLBOSHI"
-   ]
-  },
-  {
-   "address": "13TjDyWFsQGsNXGxYKU5ewjTyYUMrFHvac",
-   "distinctAssets": 9,
-   "editions": 42015,
-   "totalUnits": 42481.67034,
-   "assets": [
-    "PUDSEC",
-    "UCITCOIN",
-    "A7558311044173685461",
-    "A3935281487588899130",
-    "A244526375951753211",
-    "A15610664756579074592",
-    "DANKROSECASH",
-    "FAKEFLOONEY",
-    "A5177456513884485295"
    ]
   },
   {
@@ -15227,22 +15381,6 @@
    ]
   },
   {
-   "address": "bc1qensrsjxp4gw7gmdef9p3x30y4fmekpqcax5895",
-   "distinctAssets": 8,
-   "editions": 126008,
-   "totalUnits": 127408.00112,
-   "assets": [
-    "PUDSEC",
-    "MTBALD",
-    "A1419435205626267468",
-    "A7682980478693149380",
-    "DANKROSECASH",
-    "FAKEFLOONEY",
-    "FAKESPACEDUB",
-    "MONKEYLOVERS"
-   ]
-  },
-  {
    "address": "14xJqdZXuQycTutvqCB8ksq9HLwaSFKZgF",
    "distinctAssets": 8,
    "editions": 111158,
@@ -15323,19 +15461,19 @@
    ]
   },
   {
-   "address": "1BLq5n1i6t7Z2sCAzF9mUw64KZLRmoddoP",
+   "address": "1P1azLNkECYAgpJRdA8jyWhwaQqD2gJ71e",
    "distinctAssets": 8,
-   "editions": 100007,
-   "totalUnits": 101118.112,
+   "editions": 22,
+   "totalUnits": 22,
    "assets": [
-    "PUDSEC",
-    "HAIRKEVIN",
-    "DANKROSECASH",
-    "FLOCKPARTY",
-    "HUNTERSPEPE",
-    "PEPECARLIN",
-    "QBERTPEPE",
-    "A1720160397303662600"
+    "HOMERBRICK",
+    "BRICKDREAM",
+    "UCITCOIN",
+    "A18429515139172954198",
+    "A2990856786083895944",
+    "FAKEBACON",
+    "OCOCERAR",
+    "RAREBALD"
    ]
   },
   {
@@ -15403,6 +15541,21 @@
    ]
   },
   {
+   "address": "1rZfwk92GujpD9gqTeGusrvgRS7Eu8uhV",
+   "distinctAssets": 7,
+   "editions": 30000047,
+   "totalUnits": 30328139.600001,
+   "assets": [
+    "A11136346368420117303",
+    "PUDSEC",
+    "ISITPEPE",
+    "HAIRKEVIN",
+    "DANKROSECASH",
+    "PEPESABINA",
+    "SGONEGREY"
+   ]
+  },
+  {
    "address": "1GfkM5wVJ338hrAXeVDLKrUmt8bP5WLNpS",
    "distinctAssets": 7,
    "editions": 300027,
@@ -15415,6 +15568,21 @@
     "DANKROSECASH",
     "THEHAND",
     "GUIDEFORKS"
+   ]
+  },
+  {
+   "address": "15YshMrGDJVHhv6fa9znCHLx9fBjTTzcXP",
+   "distinctAssets": 7,
+   "editions": 42023,
+   "totalUnits": 42489.66704,
+   "assets": [
+    "PUDSEC",
+    "COCOBWARE",
+    "A18429515139172954198",
+    "A2990856786083895944",
+    "DANKROSECASH",
+    "FAKEFLOONEY",
+    "OCOCERAR"
    ]
   },
   {
@@ -15460,21 +15628,6 @@
     "FAKESPACEDUB",
     "MONKEYLOVERS",
     "NOTAPEPEMOTO"
-   ]
-  },
-  {
-   "address": "1P1azLNkECYAgpJRdA8jyWhwaQqD2gJ71e",
-   "distinctAssets": 7,
-   "editions": 21,
-   "totalUnits": 21,
-   "assets": [
-    "HOMERBRICK",
-    "BRICKDREAM",
-    "UCITCOIN",
-    "A2990856786083895944",
-    "FAKEBACON",
-    "OCOCERAR",
-    "RAREBALD"
    ]
   },
   {
@@ -15642,20 +15795,6 @@
    ]
   },
   {
-   "address": "1rZfwk92GujpD9gqTeGusrvgRS7Eu8uhV",
-   "distinctAssets": 6,
-   "editions": 30000005,
-   "totalUnits": 30328097.600001,
-   "assets": [
-    "A11136346368420117303",
-    "PUDSEC",
-    "ISITPEPE",
-    "HAIRKEVIN",
-    "DANKROSECASH",
-    "PEPESABINA"
-   ]
-  },
-  {
    "address": "173iHw7PinMtQs5Nk9Ebg94VvzTyCfT1Cz",
    "distinctAssets": 6,
    "editions": 4200004,
@@ -15712,17 +15851,45 @@
    ]
   },
   {
-   "address": "15YshMrGDJVHhv6fa9znCHLx9fBjTTzcXP",
+   "address": "1Cw7uQakqTLnch4HdGAiGdcBk2ynKV8T3s",
    "distinctAssets": 6,
-   "editions": 42022,
-   "totalUnits": 42488.66704,
+   "editions": 126008,
+   "totalUnits": 127408.00112,
    "assets": [
     "PUDSEC",
-    "COCOBWARE",
-    "A2990856786083895944",
+    "A7558311044173685461",
+    "A18429515139172954198",
+    "A244526375951753211",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1qwjxx2kkatn6x7we8d3zw6rhmympnha6tkcp7ls",
+   "distinctAssets": 6,
+   "editions": 126008,
+   "totalUnits": 127408.00112,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
     "DANKROSECASH",
     "FAKEFLOONEY",
-    "OCOCERAR"
+    "A16660558883256424000",
+    "A14595469774866317000"
+   ]
+  },
+  {
+   "address": "bc1qs6nlfwxuwpdcfqua5dyutdwww96wjzawq4efea",
+   "distinctAssets": 6,
+   "editions": 42009,
+   "totalUnits": 42475.66704,
+   "assets": [
+    "PUDSEC",
+    "UCITCOIN",
+    "A18429515139172954198",
+    "A12745715755167507665",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
    ]
   },
   {
@@ -16031,29 +16198,29 @@
    ]
   },
   {
-   "address": "1Cw7uQakqTLnch4HdGAiGdcBk2ynKV8T3s",
+   "address": "16EHGoD1gtcE53TWtkKrgXpzmv7CK3mxkm",
    "distinctAssets": 5,
-   "editions": 126005,
-   "totalUnits": 127405.00112,
+   "editions": 126020,
+   "totalUnits": 127420.00112,
    "assets": [
     "PUDSEC",
-    "A7558311044173685461",
-    "A244526375951753211",
+    "A18429515139172954198",
+    "A3935281487588899130",
     "DANKROSECASH",
     "FAKEFLOONEY"
    ]
   },
   {
-   "address": "bc1qwjxx2kkatn6x7we8d3zw6rhmympnha6tkcp7ls",
+   "address": "1HaDmPsQ44VKfgrd2sWZKAnw11xPjDXYrN",
    "distinctAssets": 5,
-   "editions": 126005,
-   "totalUnits": 127405.00112,
+   "editions": 84005,
+   "totalUnits": 84938.33408,
    "assets": [
     "PUDSEC",
+    "A18429515139172954198",
+    "A11890218141914271738",
     "DANKROSECASH",
-    "FAKEFLOONEY",
-    "A16660558883256424000",
-    "A14595469774866317000"
+    "FAKEFLOONEY"
    ]
   },
   {
@@ -16067,19 +16234,6 @@
     "UCITCOIN",
     "DANKROSECASH",
     "TESTLIFE"
-   ]
-  },
-  {
-   "address": "bc1qs6nlfwxuwpdcfqua5dyutdwww96wjzawq4efea",
-   "distinctAssets": 5,
-   "editions": 42007,
-   "totalUnits": 42473.66704,
-   "assets": [
-    "PUDSEC",
-    "UCITCOIN",
-    "A12745715755167507665",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
    ]
   },
   {
@@ -16486,6 +16640,18 @@
    ]
   },
   {
+   "address": "1D3MdKkZocRxA42Q5K5xcHJcjAJmRuaxYA",
+   "distinctAssets": 4,
+   "editions": 210014,
+   "totalUnits": 212347.3352,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
    "address": "12J9natNyet9xNzo7hTp1XuiDpCBri64nU",
    "distinctAssets": 4,
    "editions": 185003,
@@ -16495,18 +16661,6 @@
     "A10733146730093254387",
     "DANKROSECASH",
     "GRETARRESTED"
-   ]
-  },
-  {
-   "address": "16EHGoD1gtcE53TWtkKrgXpzmv7CK3mxkm",
-   "distinctAssets": 4,
-   "editions": 126016,
-   "totalUnits": 127416.00112,
-   "assets": [
-    "PUDSEC",
-    "A3935281487588899130",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
    ]
   },
   {
@@ -16522,13 +16676,157 @@
    ]
   },
   {
-   "address": "1HaDmPsQ44VKfgrd2sWZKAnw11xPjDXYrN",
+   "address": "bc1qttg5q86mc9ul6aqruzwmrct0lsqnwsk23du2zt",
    "distinctAssets": 4,
-   "editions": 84003,
-   "totalUnits": 84936.33408,
+   "editions": 84004,
+   "totalUnits": 84937.33408,
    "assets": [
     "PUDSEC",
-    "A11890218141914271738",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "1ExE8e6PAeb24ND2WR36Gdk6JhDi4faKh3",
+   "distinctAssets": 4,
+   "editions": 84004,
+   "totalUnits": 84937.33408,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "1HnKFL4L2vUsMHwsa1kDL54tP1t8GZ9X78",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "15ZkaBiX4mDaGKSLir6cxd6iN7RNa35y1S",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "13LZUq6x1d42Ta8c131WAtjDgkuq98GSRF",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "1Kc8YNwHfE8gzXX8FzXuZvHBc9kWVJXyo6",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "18anwTASPjzL6kBfMf2pFb2hrfGy2ywWmz",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "1JdMPc5U1QLnUsEQo4FpaeKxrPCMmHiS5E",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1qcjvmxf6m4k45jc8j626am4sptyxnfulpgjwedf",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1qf6e9f7cs7jlh4tuqrwkkv8s4y802zyjuk0w05j",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1qw4prts2cmwrew0qc0ef3xuveqygd82zj6f9wyw",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1q6yzey0vmawzlqms36xe72twdrpf9r5fyptsuys",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
+    "DANKROSECASH",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "133A7VLcsKGuPCiqwMzTd4VA9nC3s3oL2T",
+   "distinctAssets": 4,
+   "editions": 42002,
+   "totalUnits": 42468.66704,
+   "assets": [
+    "PUDSEC",
+    "A18429515139172954198",
     "DANKROSECASH",
     "FAKEFLOONEY"
    ]
@@ -16582,6 +16880,18 @@
    ]
   },
   {
+   "address": "14DFwrCKM64qq7FmphdHjudq88dLZSDVqJ",
+   "distinctAssets": 4,
+   "editions": 9,
+   "totalUnits": 9,
+   "assets": [
+    "A18429515139172954198",
+    "A3935281487588899130",
+    "A12868084527984649108",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
    "address": "bc1qqcf0r7cra9cm83e7e6r0mhmt2wacn8qdzw4ynw",
    "distinctAssets": 4,
    "editions": 6,
@@ -16627,6 +16937,18 @@
     "A637044214763826685",
     "A188917807653915099",
     "A699400520373410062"
+   ]
+  },
+  {
+   "address": "1PQ47JrmYcMDCeFbJM15xLP2hi83bDagSN",
+   "distinctAssets": 4,
+   "editions": 4,
+   "totalUnits": 4,
+   "assets": [
+    "MTBALD",
+    "COCOBWARE",
+    "A18429515139172954198",
+    "FAKEFLOONEY"
    ]
   },
   {
@@ -18330,161 +18652,7 @@
    ]
   },
   {
-   "address": "1D3MdKkZocRxA42Q5K5xcHJcjAJmRuaxYA",
-   "distinctAssets": 3,
-   "editions": 210005,
-   "totalUnits": 212338.3352,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1qttg5q86mc9ul6aqruzwmrct0lsqnwsk23du2zt",
-   "distinctAssets": 3,
-   "editions": 84002,
-   "totalUnits": 84935.33408,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "1ExE8e6PAeb24ND2WR36Gdk6JhDi4faKh3",
-   "distinctAssets": 3,
-   "editions": 84002,
-   "totalUnits": 84935.33408,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "1HnKFL4L2vUsMHwsa1kDL54tP1t8GZ9X78",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "15ZkaBiX4mDaGKSLir6cxd6iN7RNa35y1S",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "13LZUq6x1d42Ta8c131WAtjDgkuq98GSRF",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "1Kc8YNwHfE8gzXX8FzXuZvHBc9kWVJXyo6",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "18anwTASPjzL6kBfMf2pFb2hrfGy2ywWmz",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "1JdMPc5U1QLnUsEQo4FpaeKxrPCMmHiS5E",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1qcjvmxf6m4k45jc8j626am4sptyxnfulpgjwedf",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1qf6e9f7cs7jlh4tuqrwkkv8s4y802zyjuk0w05j",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1qw4prts2cmwrew0qc0ef3xuveqygd82zj6f9wyw",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
    "address": "bc1q56lyrw28k6tzrlxjqe8aahrq9den7zydvet40u",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1q6yzey0vmawzlqms36xe72twdrpf9r5fyptsuys",
-   "distinctAssets": 3,
-   "editions": 42001,
-   "totalUnits": 42467.66704,
-   "assets": [
-    "PUDSEC",
-    "DANKROSECASH",
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "133A7VLcsKGuPCiqwMzTd4VA9nC3s3oL2T",
    "distinctAssets": 3,
    "editions": 42001,
    "totalUnits": 42467.66704,
@@ -18506,6 +18674,17 @@
    ]
   },
   {
+   "address": "bc1qmufldvqr5rhzq2wy4spk6mlamtejt9pguumheu",
+   "distinctAssets": 3,
+   "editions": 131,
+   "totalUnits": 131,
+   "assets": [
+    "A18429515139172954198",
+    "A12071358349845607584",
+    "A1720160397303662600"
+   ]
+  },
+  {
    "address": "1Q5vJGG1xE1MUBW5uwa5EW2HysnStsKtAn",
    "distinctAssets": 3,
    "editions": 12,
@@ -18514,17 +18693,6 @@
     "FAKEKYCPEPE",
     "KEKASHIC",
     "MONKEYLOVERS"
-   ]
-  },
-  {
-   "address": "14DFwrCKM64qq7FmphdHjudq88dLZSDVqJ",
-   "distinctAssets": 3,
-   "editions": 7,
-   "totalUnits": 7,
-   "assets": [
-    "A3935281487588899130",
-    "A12868084527984649108",
-    "FAKEFLOONEY"
    ]
   },
   {
@@ -18569,17 +18737,6 @@
     "HOMERBRICK",
     "BRICKDREAM",
     "UCITCOIN"
-   ]
-  },
-  {
-   "address": "1PQ47JrmYcMDCeFbJM15xLP2hi83bDagSN",
-   "distinctAssets": 3,
-   "editions": 3,
-   "totalUnits": 3,
-   "assets": [
-    "MTBALD",
-    "COCOBWARE",
-    "FAKEFLOONEY"
    ]
   },
   {
@@ -18772,16 +18929,6 @@
    ]
   },
   {
-   "address": "bc1qmufldvqr5rhzq2wy4spk6mlamtejt9pguumheu",
-   "distinctAssets": 2,
-   "editions": 110,
-   "totalUnits": 110,
-   "assets": [
-    "A12071358349845607584",
-    "A1720160397303662600"
-   ]
-  },
-  {
    "address": "3LQFELVwyyu5xrGGZ7MDdDps9AEpyJ1cXU",
    "distinctAssets": 2,
    "editions": 43,
@@ -18909,6 +19056,16 @@
    "assets": [
     "FAKEKYCPEPE",
     "KEKASHIC"
+   ]
+  },
+  {
+   "address": "bc1qfnapw9jp7702gm8vy9cge9pyff4mgzzuevt00t",
+   "distinctAssets": 2,
+   "editions": 4,
+   "totalUnits": 4,
+   "assets": [
+    "GLAIRPEPE",
+    "SGONEGREY"
    ]
   },
   {
@@ -19048,6 +19205,46 @@
    "totalUnits": 2,
    "assets": [
     "HAIRKEVIN",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1q9x2j7ttzwl55tf8kct2ctn7p5nlemru3h08swa",
+   "distinctAssets": 2,
+   "editions": 2,
+   "totalUnits": 2,
+   "assets": [
+    "A18429515139172954198",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1qtsuf4cadn30vksl3r2cnxge6rc2yjt6atqcfjx",
+   "distinctAssets": 2,
+   "editions": 2,
+   "totalUnits": 2,
+   "assets": [
+    "A18429515139172954198",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1qm73fduurtn6ucw9nclnrzu55ulhtd7wcn0z994",
+   "distinctAssets": 2,
+   "editions": 2,
+   "totalUnits": 2,
+   "assets": [
+    "A18429515139172954198",
+    "FAKEFLOONEY"
+   ]
+  },
+  {
+   "address": "bc1q4uxe3hnzrnsnr07ufe7x4jjx8gezhwf409a66e",
+   "distinctAssets": 2,
+   "editions": 2,
+   "totalUnits": 2,
+   "assets": [
+    "A18429515139172954198",
     "FAKEFLOONEY"
    ]
   },
@@ -19486,6 +19683,15 @@
    ]
   },
   {
+   "address": "141U9An1EmNcNWrBtEPJJMyNwxERZTDakU",
+   "distinctAssets": 1,
+   "editions": 13,
+   "totalUnits": 13,
+   "assets": [
+    "A18429515139172954198"
+   ]
+  },
+  {
    "address": "bc1q7jynlxknt6kh6vstsekg4pzlrgz3qvhh6hx75a",
    "distinctAssets": 1,
    "editions": 13,
@@ -19510,6 +19716,15 @@
    "totalUnits": 10,
    "assets": [
     "A3935281487588899130"
+   ]
+  },
+  {
+   "address": "16NQ1wpLkxZiRQBz7kuu4hCP2wceUnoKDY",
+   "distinctAssets": 1,
+   "editions": 8,
+   "totalUnits": 8,
+   "assets": [
+    "A18429515139172954198"
    ]
   },
   {
@@ -19708,15 +19923,6 @@
    "totalUnits": 3,
    "assets": [
     "UCITCOIN"
-   ]
-  },
-  {
-   "address": "bc1qfnapw9jp7702gm8vy9cge9pyff4mgzzuevt00t",
-   "distinctAssets": 1,
-   "editions": 2,
-   "totalUnits": 2,
-   "assets": [
-    "GLAIRPEPE"
    ]
   },
   {
@@ -20422,6 +20628,51 @@
    ]
   },
   {
+   "address": "1Co6LFA1xsDV5xocyqZiovGBLqy6WCR5pm",
+   "distinctAssets": 1,
+   "editions": 1,
+   "totalUnits": 1,
+   "assets": [
+    "A18429515139172954198"
+   ]
+  },
+  {
+   "address": "1Ep2VE8nBB8YFEaXNxPPFm8wnJPQQzLq93",
+   "distinctAssets": 1,
+   "editions": 1,
+   "totalUnits": 1,
+   "assets": [
+    "A18429515139172954198"
+   ]
+  },
+  {
+   "address": "1BTVrUAzTeLupghZ7pd8hjvn7RSNsYpkuH",
+   "distinctAssets": 1,
+   "editions": 1,
+   "totalUnits": 1,
+   "assets": [
+    "A18429515139172954198"
+   ]
+  },
+  {
+   "address": "bc1qzzxln49x202l7m3289gs5e4q5th4tdt406w8ka",
+   "distinctAssets": 1,
+   "editions": 1,
+   "totalUnits": 1,
+   "assets": [
+    "A18429515139172954198"
+   ]
+  },
+  {
+   "address": "1MmGfAWd9ZtjibM6VcwbDh4gZh5LWpj5Cs",
+   "distinctAssets": 1,
+   "editions": 1,
+   "totalUnits": 1,
+   "assets": [
+    "A18429515139172954198"
+   ]
+  },
+  {
    "address": "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
    "distinctAssets": 1,
    "editions": 1,
@@ -20617,42 +20868,6 @@
    "totalUnits": 1,
    "assets": [
     "DONUTSTEALER"
-   ]
-  },
-  {
-   "address": "bc1q9x2j7ttzwl55tf8kct2ctn7p5nlemru3h08swa",
-   "distinctAssets": 1,
-   "editions": 1,
-   "totalUnits": 1,
-   "assets": [
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1qtsuf4cadn30vksl3r2cnxge6rc2yjt6atqcfjx",
-   "distinctAssets": 1,
-   "editions": 1,
-   "totalUnits": 1,
-   "assets": [
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1qm73fduurtn6ucw9nclnrzu55ulhtd7wcn0z994",
-   "distinctAssets": 1,
-   "editions": 1,
-   "totalUnits": 1,
-   "assets": [
-    "FAKEFLOONEY"
-   ]
-  },
-  {
-   "address": "bc1q4uxe3hnzrnsnr07ufe7x4jjx8gezhwf409a66e",
-   "distinctAssets": 1,
-   "editions": 1,
-   "totalUnits": 1,
-   "assets": [
-    "FAKEFLOONEY"
    ]
   },
   {

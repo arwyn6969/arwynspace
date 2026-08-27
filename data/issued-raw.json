@@ -7448,5 +7448,19 @@
   "last_issuance_block_index": 864828,
   "_events": 3,
   "_sourceAddress": "1MNVKFunSKArs3ya776VoALR6Lv1eu6yUt"
+ },
+ {
+  "asset": "SGONEGREY",
+  "asset_longname": null,
+  "issuer": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j",
+  "owner": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j",
+  "divisible": false,
+  "locked": true,
+  "description": "https://arweave.net/Nzy1e9vgAkishDaVh456D_zpg6cKgZTWZnquMZTSX2o",
+  "supply": 888,
+  "first_issuance_block_index": 963867,
+  "last_issuance_block_index": 964162,
+  "_events": 2,
+  "_sourceAddress": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j"
  }
 ]
