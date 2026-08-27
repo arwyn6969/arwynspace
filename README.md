@@ -74,11 +74,61 @@ npm run index          # resolve all artwork  (slow, network-bound)
 npm run index:market   # dispensers, orders, holders
 npm run build          # stage data into public/data
 npm run dev            # preview at http://localhost:4173
-node scripts/bundle.mjs   # single-file build in dist/gallery.html
+npm run check          # tests + field-mismatch probe
+npm run ship           # build → check → bundle   (use this to release)
 ```
 
 Useful flags: `--only ASSET` to resolve one piece, `--limit N` to cap, `--skip-probe` to skip
 network probing.
+
+**Release through `npm run ship`, not `bundle` alone.** It stages data, runs every check, then
+writes `dist/gallery.html`. The bundler refuses to run when the snapshots the tests validated
+differ from the ones it is about to inline — otherwise the checks can pass against one snapshot
+while a different, unvalidated one ships.
+
+## Checks
+
+Every defect this project has had was one of two shapes: the view read a field the data did not
+carry **in the collection being queried**, or it read a real field holding the wrong value for
+that record's state. None of them crashed. All produced confidently wrong numbers, which is
+far harder to notice.
+
+So the checks run the **shipping code** under Node against the **real snapshots** — never a
+reimplementation, which would only prove the reimplementation agrees with itself.
+
+```bash
+npm run test    # 68 assertions across five suites
+npm run probe   # field-mismatch detector; exits non-zero on an unexplained read
+```
+
+| Suite | Covers |
+|---|---|
+| `test/contract.test.mjs` | zero-rendering, listing discoverability, freshness, output hygiene |
+| `test/units.test.mjs` | the three upstream unit conventions, effective supply, rarity, formatter drift |
+| `test/mega.test.mjs` | the dispense algorithm against its reference formula, precision, monotonicity |
+| `test/collectors.test.mjs` | totals reconcile with their own parts, ranking by pieces not units |
+| `test/schema.test.mjs` | indexed and API shapes render identically; raw values stay detectable |
+
+### The probe, and why it can be trusted
+
+`test/probe.mjs` wraps every record in every collection in a `Proxy` that knows the union of
+keys **its own** collection carries, runs the render functions over the real data, and reports
+any read of an absent key against the exact source line that made it. Deliberate cross-schema
+tolerance — `readOrder`, `readDispenser`, `orderAssetNames` — is classified by source position,
+so those intentional double-reads cannot mask a genuine fault.
+
+It can be trusted because it has been **made to fail on purpose**. Point it at a client with a
+known defect restored and it must exit non-zero:
+
+```bash
+APP_JS=/tmp/broken-app.js npm run probe   # must report an unexplained read
+```
+
+That step is not ceremony. The first version of this probe reported a clean bill of health
+against a client with a real defect reintroduced, because it passed proxies in as arguments
+while the faulty function read `state.market.orders` directly and never saw one. A checker that
+cannot fail on a known bug does not give you confidence, it manufactures it. If you change the
+probe, re-prove it the same way.
 
 ## Adding wallets
 

@@ -93,14 +93,23 @@ const supplyUnitsOf = r => Number(r.supplyUnits ?? r.supply ?? 0) || 0;
 const effSupply = r => (r.effectiveSupply != null ? r.effectiveSupply
   : Math.round(supplyUnitsOf(r) * (r.divisible ? SATS : 1)));
 
+/**
+ * Trailing-zero trim. Must stay identical to `trimZeros` in lib/units.mjs, which
+ * this file cannot import; test/units.test.mjs asserts the two agree. The earlier
+ * form stripped only ".00", so 7.00 became "7" while 6.90 stayed "6.90".
+ */
+const trimZeros = s => s.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+
 function fmtEff(n) {
   if (n == null) return "—";
   const abs = Math.abs(n);
-  if (abs >= 1e15) return (n / 1e15).toFixed(2).replace(/\.00$/, "") + "Q";
-  if (abs >= 1e12) return (n / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
-  if (abs >= 1e9)  return (n / 1e9).toFixed(2).replace(/\.00$/, "")  + "B";
-  if (abs >= 1e6)  return (n / 1e6).toFixed(2).replace(/\.00$/, "")  + "M";
-  return Number(n).toLocaleString("en-US");
+  if (abs >= 1e15) return trimZeros((n / 1e15).toFixed(2)) + "Q";
+  if (abs >= 1e12) return trimZeros((n / 1e12).toFixed(2)) + "T";
+  if (abs >= 1e9)  return trimZeros((n / 1e9).toFixed(2))  + "B";
+  if (abs >= 1e6)  return trimZeros((n / 1e6).toFixed(2))  + "M";
+  // Delegate rather than repeat a bare toLocaleString(), which is what truncated
+  // small values to "0" everywhere else.
+  return fmt(n);
 }
 
 /** Never minted (zero supply, unlocked) has no claim to rarity; locked zero does. */
@@ -371,17 +380,27 @@ const markNav = r => { const a = document.querySelector(`.nav a[data-route="${r}
 
 /* ---------------- listings lookup ---------------- */
 
-function listingsFor(asset) {
+/**
+ * Listings that concern one asset. Matches on longname as well as name, and routes
+ * order matching through orderInvolves() rather than reading a field name directly —
+ * the previous version filtered open orders on `give_asset`, a key that only exists
+ * on order HISTORY, so it matched zero of them and no artwork page ever showed a
+ * DEX listing.
+ */
+function listingsFor(asset, longname = null) {
   const m = state.market;
   if (!m) return { dispensers: [], orders: [] };
   return {
-    dispensers: (m.dispensers || []).filter(d => d.asset === asset),
-    orders: (m.orders || []).filter(o => o.give_asset === asset),
+    dispensers: (m.dispensers || []).filter(d =>
+      d.asset === asset || (!!longname && d.assetLongname === longname)),
+    orders: (m.orders || []).filter(o => orderInvolves(o, asset, longname)),
   };
 }
 
-const isForSale = asset => {
-  const l = listingsFor(asset);
+/** Takes the record rather than a bare name, so the longname is always available. */
+const isForSale = r => {
+  if (!r) return false;
+  const l = listingsFor(r.asset, r.assetLongname);
   return l.dispensers.length > 0 || l.orders.length > 0;
 };
 
@@ -399,7 +418,7 @@ function filtered() {
   if (f === "nomedia") rows = rows.filter(r => !r.hasMedia);
   if (f === "stamps")  rows = rows.filter(r => r.isStamp && r.hasMedia);
   if (f === "xcp")     rows = rows.filter(r => !r.isStamp && r.hasMedia);
-  if (f === "forsale") rows = rows.filter(r => isForSale(r.asset));
+  if (f === "forsale") rows = rows.filter(r => isForSale(r));
 
   const q = state.query.trim().toLowerCase();
   if (q) rows = rows.filter(r =>
@@ -454,7 +473,7 @@ function renderGallery() {
     nomedia: all.filter(r => !r.hasMedia).length,
     stamps: all.filter(r => r.isStamp && r.hasMedia).length,
     xcp: all.filter(r => !r.isStamp && r.hasMedia).length,
-    forsale: all.filter(r => isForSale(r.asset)).length,
+    forsale: all.filter(r => isForSale(r)).length,
   };
   const rows = filtered();
   const c = state.data.counts || {};
@@ -524,7 +543,7 @@ const chip = (f, label, n) =>
 function card(r) {
   const src = thumbOf(r);
   const px = r.pixelate ? " pixel" : "";
-  const sale = isForSale(r.asset);
+  const sale = isForSale(r);
 
   let visual;
   if (hasVideo(r)) {
@@ -654,7 +673,7 @@ function renderDetail(asset) {
   if (r.media?.original) tools.push(`<a class="tool" href="${esc(r.media.original)}" target="_blank" rel="noopener noreferrer">Original${r.media.originalDims ? ` ${r.media.originalDims.w}×${r.media.originalDims.h}` : ""}</a>`);
   if (r.media?.animationUrl && r.media.animationUrl !== r.media.original) tools.push(`<a class="tool" href="${esc(r.media.animationUrl)}" target="_blank" rel="noopener noreferrer">Video file</a>`);
 
-  const { dispensers, orders } = listingsFor(r.asset);
+  const { dispensers, orders } = listingsFor(r.asset, r.assetLongname);
   const holders = state.holders?.byAsset?.[r.asset] || null;
 
   view.innerHTML = `
@@ -812,8 +831,8 @@ function orderRow(o, r) {
   return `
   <div class="buy-row">
     <div class="left">
-      <div class="price">${getting}<small>${od.isOpen ? "DEX order" : `DEX · ${esc(od.status)}`}</small></div>
-      <div class="qty">${od.isOpen ? "for" : "traded for"} ${qty(od.giveShown, r.divisible)} ${esc(nameOf(r))}</div>
+      <div class="price">${getting}<small>${od.isOpen ? "DEX order" : `DEX · ${esc(shortStatus(od.status))}`}</small></div>
+      <div class="qty">${od.isFilled ? "traded for" : "for"} ${qty(od.giveShown, r.divisible)} ${esc(nameOf(r))}</div>
     </div>
     ${od.isOpen ? `<a class="btn" href="${LINKS.horizon(r.assetLongname || r.asset)}" target="_blank" rel="noopener noreferrer">Trade →</a>` : ""}
   </div>`;
@@ -854,12 +873,33 @@ function orderTouchesCollection(o, map) {
   return orderArtwork(o, map) != null;
 }
 
+/**
+ * Every asset name an order might carry, on either side, in either schema.
+ *
+ * SINGLE SOURCE OF TRUTH — do not inline this list anywhere else. Open orders
+ * arrive camelCase from the market scan (`giveAsset`); history arrives snake_case
+ * from tokenscan (`give_asset`). `listingsFor()` once read only `give_asset` and
+ * so matched nothing at all against the open-order collection, which silently
+ * removed every DEX listing from the artwork pages and the for-sale filter.
+ * That was the fourth "right field, wrong collection" defect in this project.
+ * Anything that needs to ask "which asset is this order about" comes through here.
+ */
+const orderAssetNames = o => [
+  o.giveAsset, o.give_asset, o.giveAssetLongname, o.give_asset_longname,
+  o.getAsset,  o.get_asset,  o.getAssetLongname,  o.get_asset_longname,
+  o.asset,
+].filter(Boolean);
+
 /** The collection asset an order refers to, whichever side it sits on. */
 function orderArtwork(o, map) {
-  const names = [o.giveAsset, o.give_asset, o.giveAssetLongname, o.give_asset_longname,
-                 o.getAsset, o.get_asset, o.getAssetLongname, o.get_asset_longname];
-  for (const n of names) if (n && map.has(n)) return map.get(n);
+  for (const n of orderAssetNames(o)) if (map.has(n)) return map.get(n);
   return null;
+}
+
+/** Does this order concern one specific asset, under either its name or longname? */
+function orderInvolves(o, asset, longname) {
+  const names = orderAssetNames(o);
+  return (!!asset && names.includes(asset)) || (!!longname && names.includes(longname));
 }
 
 function readOrder(o) {
@@ -876,6 +916,11 @@ function readOrder(o) {
     raw: o,
     status,
     isOpen,
+    // "Settled" is not "sold". Of 154 history events only 44 filled; 98 expired,
+    // 10 were cancelled and 2 were invalid. Labelling every non-open order as a
+    // sale claims 101 trades that never happened, so the wording keys off this
+    // rather than off !isOpen.
+    isFilled: status === "filled",
     giveAsset: o.giveAsset ?? o.give_asset ?? null,
     getAsset:  o.getAsset  ?? o.get_asset  ?? null,
     giveAssetLongname: o.giveAssetLongname ?? o.give_asset_longname ?? null,
@@ -938,8 +983,18 @@ function signalBlock(asset) {
 
 const COLLECTORS_SHOWN = 150;
 
+/**
+ * Every collectible piece, keyed by asset — not just the ones whose media resolved.
+ *
+ * The collectors page ranks by distinct pieces held, a figure the indexer computes
+ * over everything a holder owns. Resolving those holdings through a media-only map
+ * meant `pieces` and the stamps/Counterparty split were counted over different sets,
+ * so 272 of 896 collectors displayed a total that did not equal its own parts —
+ * "52 pieces · 30 stamps · 20 Counterparty". Over the full collection every holding
+ * resolves and all 896 reconcile exactly. Thumbnails filter for media themselves.
+ */
 function artworkMap() {
-  return new Map(artworks().filter(a => a.hasMedia).map(a => [a.asset, a]));
+  return new Map(artworks().map(a => [a.asset, a]));
 }
 
 function renderCollectors() {
@@ -1134,7 +1189,9 @@ function renderMarket() {
         ? `<div class="listings">${openOrders.map(o => orderCard(o, orderArtwork(o, map) ?? map.get(o.asset), false, map)).join("")}</div>`
         : `<div class="notice">No exchange orders are open at the moment.${history.length
             ? ` There are <strong>${history.length}</strong> in this wallet's history — ${
-              statusBreakdown(history)} — listed below.` : ""}</div>`}
+              statusBreakdown(history)}${filled.length
+                ? `. The ${filled.length} that filled are listed below; the rest expired or were cancelled without trading.`
+                : `, none of which filled.`}` : ""}</div>`}
 
       ${filled.length ? `
         <div class="section-h"><h3>Sold via the exchange</h3><div class="rule"></div><span class="count">${filled.length}</span></div>
@@ -1206,8 +1263,13 @@ function orderCard(o, r, isHistory = false, map = null) {
   const payUnits  = artIsGive ? od.getShown : od.giveShown;
   const payDiv    = assetDivisible(payAsset, lookup);
 
-  const artLabel  = artIsGive ? (od.isOpen ? "offered" : "sold") : (od.isOpen ? "wanted" : "bought");
-  const payLabel  = od.isOpen ? (artIsGive ? "asking" : "offering") : "traded for";
+  // Only a filled order is a sale. An expired or cancelled one was an offer nobody
+  // took, and the status chip beside this says so.
+  const artLabel  = od.isFilled ? (artIsGive ? "sold" : "bought")
+                                : (artIsGive ? "offered" : "wanted");
+  const payLabel  = od.isFilled ? "traded for"
+                  : od.isOpen   ? (artIsGive ? "asking" : "offering")
+                                : (artIsGive ? "was asking" : "was offering");
 
   return `
   <article class="listing ${isHistory ? "past" : ""}" data-a="${esc(r?.asset ?? od.giveAsset ?? "")}">
@@ -1297,16 +1359,20 @@ const megaIsLive = () => !!(state.mega?.dispensers?.length);
 function dispenserFreshness(m) {
   if (!m) return freshness(false, null);
   const at = m.dispensersFetchedAt ?? m.generatedAt ?? null;
-  return freshness(!!m.dispensersLive, at);
+  // The indexer records which upstream it scanned; surfacing it means the badge
+  // states provenance as well as age, and stops dispensersSource being written
+  // to market.json and read by nothing.
+  return freshness(!!m.dispensersLive, at, m.dispensersLive ? null : m.dispensersSource);
 }
 
 /** A small, consistent badge so every figure declares its own freshness. */
-function freshness(isLive, at) {
+function freshness(isLive, at, source = null) {
   const when = at ? new Date(at) : null;
   const stamp = when ? when.toISOString().slice(11, 16) + " UTC" : null;
+  const via = source ? ` · ${esc(String(source))}` : "";
   return isLive
     ? `<span class="fresh live" title="Fetched from the chain just now">Live${stamp ? ` · ${esc(stamp)}` : ""}</span>`
-    : `<span class="fresh stale" title="From the last index build, not live">Indexed${stamp ? ` · ${esc(stamp)}` : ""}</span>`;
+    : `<span class="fresh stale" title="From the last index build, not live">Indexed${stamp ? ` · ${esc(stamp)}` : ""}${via}</span>`;
 }
 
 function renderMega() {

@@ -44,9 +44,15 @@ function simulateMega(dispensers, paymentSats) {
       continue;
     }
 
-    // Float division on 8-decimal values needs rounding, or 0.099966/0.000001
-    // comes out as 99965.99999999999 and loses a lot.
-    const lotsAvailable = Math.floor(round8(stock / give));
+    // Count lots in integer atomic units rather than dividing floats.
+    //
+    // The previous form was Math.floor(round8(stock / give)). That is correct for
+    // every dispenser currently open, but round8 multiplies by 1e8, and for a
+    // divisible asset dispensing atomic lots the intermediate exceeds
+    // Number.MAX_SAFE_INTEGER: a 69,000,000 stock at 0.00000001 per lot gives
+    // 6.9e23 inside round8 and returns 6,899,999,999,999,999 — one lot short, with
+    // no error raised. Atomic units are exact integers, so the division is exact.
+    const lotsAvailable = Math.floor(atomicUnits(stock) / atomicUnits(give));
     const lots = Math.min(lotsWanted, lotsAvailable);
     if (lots < 1) {
       results.push({ ...d, triggered: false, empty: true, lotsWanted, lotsAvailable, lots: 0, received: 0 });
@@ -59,7 +65,8 @@ function simulateMega(dispensers, paymentSats) {
       lotsWanted,
       lotsAvailable,
       lots,
-      received: round8(lots * give),
+      // Also atomic, and clamped: what is dispensed can never exceed what is held.
+      received: Math.min(lots * atomicUnits(give), atomicUnits(stock)) / SATS_PER_BTC,
       // Factual, not editorial: the payment covered more lots than exist.
       stockCapped: lots < lotsWanted,
     });
@@ -83,11 +90,29 @@ function round8(n) {
 }
 
 /**
+ * A quantity as an exact integer count of smallest units.
+ *
+ * Counterparty stores divisible quantities as 8-decimal fixed point, so the integer
+ * form is the chain's own representation and arithmetic on it is exact. Prefer this
+ * over float division whenever the result feeds a lot count.
+ *
+ * lib/units.mjs says the 1e8 factor must live nowhere else, and it is right — but it
+ * is an ES module and this file is a plain browser script that cannot import it.
+ * This is the one deliberate duplication, kept identical to units.mjs `toAtomic`
+ * and covered by test/units.test.mjs, which asserts the two agree.
+ */
+function atomicUnits(n) {
+  return Math.round(Number(n) * SATS_PER_BTC);
+}
+
+/**
  * Every payment level at which the outcome changes.
  *
- * Two kinds of threshold matter: a dispenser's price (a new asset unlocks) and
- * price x stock (that dispenser is exhausted and further payment adds nothing
- * from it). Both are useful to show as tiers.
+ * Two kinds of threshold exist: a dispenser's price, where a new asset unlocks, and
+ * price x stock, where that dispenser is exhausted and further payment adds nothing
+ * from it. Only the unlock prices are returned as tiers — exhaustion is surfaced per
+ * row via stockCapped instead, which keeps the tier list to the levels a buyer
+ * actually chooses between. The earlier wording here claimed both were returned.
  */
 function megaTiers(dispensers) {
   const points = new Set();
@@ -117,7 +142,9 @@ function megaTiers(dispensers) {
  */
 function megaQty(received, divisible) {
   const n = Number(received) || 0;
-  if (!divisible) return { text: n.toLocaleString("en-US"), atomic: false };
+  // maximumFractionDigits, not a bare toLocaleString() — that defaults to 3 and is
+  // what rendered small chain values as "0" elsewhere on the site.
+  if (!divisible) return { text: n.toLocaleString("en-US", { maximumFractionDigits: 8 }), atomic: false };
   const atomic = Math.round(n * SATS_PER_BTC);
   // Below a whole unit, atomic counting is the only readable form.
   if (n < 1) return { text: atomic.toLocaleString("en-US"), atomic: true, suffix: atomic === 1 ? "smallest unit" : "smallest units" };
