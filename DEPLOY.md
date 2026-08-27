@@ -40,6 +40,41 @@ Set these in the Vercel dashboard under Settings → Environment Variables. All 
 | `MEGA_ADDRESS` | `1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j` | Which address the simulator reads |
 | `XCP_API` | `https://api.counterparty.io:4000` | Point at your own node if you have one |
 
+## Cloudflare Pages
+
+An alternative (or addition) to Vercel. `wrangler.toml` and `public/_headers` are committed;
+`vercel.json` is left in place and the two hosts ignore each other.
+
+**Phase A — static, no code changes needed.**
+
+| Setting | Value |
+|---|---|
+| Build command | `npm run build` |
+| Output directory | `public` |
+| Install command | *(leave empty — there are no dependencies)* |
+
+That is the whole configuration. It works because the client falls back from `/api/*` to the
+committed snapshots in `public/data/`, so every view renders without a single function
+deployed. Hash routing (`#/collected`) means no SPA rewrite rule is needed either.
+
+Do **not** set the build command to `npm run ship`. That additionally bundles
+`dist/gallery.html`, which is gitignored and is not what Pages serves.
+
+**Phase B — the API routes, optional.**
+
+`api/*.js` are Vercel Node handlers (`export default (req, res)`). Pages Functions use
+`export function onRequest(context)` returning a `Response`, and live in `functions/`.
+
+| Route | Porting effort |
+|---|---|
+| `api/stats.js` | Mechanical — `fetch` only |
+| `api/market.js` | Mechanical — `fetch` only |
+| `api/mega.js` | Mechanical — `fetch` only |
+| `api/holders.js` | **Needs thought** — reads the snapshot off disk with `fs.readFileSync`, and Workers have no filesystem. Must read through the assets binding instead |
+
+The `*/15` cron in `vercel.json` has no Pages equivalent. It only warms the `/api/mega` cache;
+`refresh.yml` already handles the real daily data refresh.
+
 ## A custom domain
 
 Vercel dashboard → Settings → Domains → add your domain, then follow the DNS instructions. Nothing in

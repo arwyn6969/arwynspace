@@ -218,6 +218,11 @@ index time so dimensions and scaling stay honest.
 }
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) — particularly the one invariant (absent is not zero)
+and the list of things that look like bugs but are deliberate.
+
 ## Deploying to Vercel
 
 The site is static plus two serverless functions, with **no dependencies to install**.

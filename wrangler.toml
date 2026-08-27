@@ -1,0 +1,45 @@
+# Cloudflare Pages configuration.
+#
+# This sits alongside vercel.json rather than replacing it — the two hosts read
+# different files and neither is confused by the other's presence, so the site can
+# be deployed to either or both.
+#
+# WHY THIS IS A STATIC DEPLOY AND WHY THAT IS ENOUGH
+#
+# The client asks for /api/holders, /api/market, /api/stats and /api/mega first,
+# and falls back to the committed snapshots in public/data/ when those 404
+# (public/app.js, loadHolders/loadMarket and friends). public/data/ is tracked in
+# git on purpose, so a host serving only static files still renders the whole
+# site: gallery, Collected, Collectors, Market and every artwork page. The API
+# routes normalise units server-side and save a round trip; they are an
+# optimisation here, not a requirement.
+#
+# Routing needs no rewrite rule. The app uses hash routes (#/collected,
+# #/art/CARPOPODITE), so every URL is served by index.html without an SPA
+# fallback — one of the few genuine advantages of hash routing.
+#
+# ADDING THE API ROUTES LATER (Phase B)
+#
+# The four routes in api/ are Vercel Node handlers — `export default (req, res)`.
+# Cloudflare Pages Functions want `export function onRequest(context)` returning a
+# Response. Three of them (stats, market, mega) only use fetch and port
+# mechanically. api/holders.js does fs.readFileSync(process.cwd() + "/data/...")
+# and Workers have no filesystem, so it must read the snapshot through the assets
+# binding or env instead. Do not port it by pattern-matching the other three.
+#
+# vercel.json also declares a cron (*/15 on /api/mega). Pages has no equivalent;
+# Workers cron triggers or GitHub Actions would cover it. That cron only warms a
+# cache, and .github/workflows/refresh.yml already handles the real data refresh.
+
+name = "arwynspace"
+pages_build_output_dir = "public"
+compatibility_date = "2026-08-27"
+
+# Build command for the Pages dashboard / CI:
+#
+#   npm run build
+#
+# It stages data/ into public/data/ and injects the artist name and tagline from
+# config/wallets.json. There are no dependencies to install. Do not use
+# `npm run ship` here — that also bundles dist/gallery.html, which is gitignored
+# and not what Pages serves.

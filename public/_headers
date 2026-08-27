@@ -1,0 +1,24 @@
+# Cloudflare Pages headers — the equivalent of the "headers" block in vercel.json,
+# so caching behaves the same on either host.
+#
+# The data snapshots change once a day at most (refresh.yml commits them), but
+# they are the largest thing on the page, so a short browser TTL with a long
+# stale-while-revalidate keeps repeat visits fast without serving yesterday's
+# holder counts to someone who just reloaded.
+
+/data/*
+  Cache-Control: public, max-age=60, s-maxage=300, stale-while-revalidate=86400
+
+/*.css
+  Cache-Control: public, max-age=3600
+
+/*.js
+  Cache-Control: public, max-age=3600
+
+# The document itself must not be cached hard: a stale index.html would keep
+# loading an old app.js and silently render old data with new code, or vice versa.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
