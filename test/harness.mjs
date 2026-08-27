@@ -28,6 +28,7 @@ export const CLIENT_PATH = process.env.APP_JS
 /** Functions and values the tests are allowed to reach for. */
 const EXPOSE = [
   "collectedRows", "collectedRow", "renderCollected", "pctOf", "pctPair", "concLabel",
+  "btcUsd", "loadBtcSpot",
   "state", "listingsFor", "isForSale", "orderAssetNames", "orderInvolves",
   "orderArtwork", "orderTouchesCollection", "readOrder", "readDispenser",
   "qty", "fmt", "fmtEff", "assetDivisible", "statusBreakdown", "statusKey",

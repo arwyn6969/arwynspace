@@ -21,6 +21,7 @@ const state = {
   megaSats: 111100,        // simulator input, in satoshis
   mega: null,              // live mega dispenser state from /api/mega
   stats: null,             // live headline figures from /api/stats
+  btcSpot: null,           // { usd, fetchedAt } — live spot, see loadBtcSpot()
   megaLoading: false,
 };
 
@@ -176,6 +177,9 @@ async function boot() {
   loadMarket();
   loadHolders();
   loadLiveDispensers();
+  // Cheapest and highest-value of the lot: one keyless call that stops every USD
+  // figure inheriting the snapshot's price. See loadBtcSpot().
+  loadBtcSpot();
 }
 
 function updateFootMeta() {
@@ -187,6 +191,49 @@ function updateFootMeta() {
     `Artwork index built ${esc(new Date(state.data.generatedAt).toISOString().slice(0, 16).replace("T", " "))} UTC` +
     `<br>${c.artworks ?? 0} works indexed · ${c.tokenOpsExcluded ?? 0} token ops filtered` +
     (st?.chainHeight ? `<br>Chain height ${fmt(st.chainHeight)} · live` : "");
+}
+
+/**
+ * Live BTC spot price.
+ *
+ * WHY THIS IS NOT LEFT TO THE SNAPSHOT
+ *
+ * Every USD figure on the site is a BTC amount multiplied by a price, and the price
+ * was only ever read from market.json — so on a static deploy it froze at index
+ * time. Measured on 27 Aug 2026: the snapshot said $63,955 while spot was $79,892,
+ * a 25% error on every dispenser price, price signal and simulator projection. The
+ * asset list drifts slowly and a daily re-index handles it; the BTC price does not,
+ * and no re-index cadence fixes a number that moves hourly.
+ *
+ * One call, CORS-open, no key. If it fails the snapshot value still stands — but
+ * btcUsd() reports which source it used so the UI can say so rather than passing a
+ * month-old price off as current.
+ */
+async function loadBtcSpot() {
+  try {
+    const r = await fetch("https://api.coinbase.com/v2/prices/BTC-USD/spot", { cache: "no-cache" });
+    if (!r.ok) throw 0;
+    const usd = Number((await r.json())?.data?.amount);
+    if (!Number.isFinite(usd) || usd <= 0) throw 0;
+    state.btcSpot = { usd, fetchedAt: new Date().toISOString() };
+    route();
+  } catch { /* snapshot price remains the fallback; btcUsd() will label it indexed */ }
+}
+
+/**
+ * The BTC price to convert with, and where it came from.
+ *
+ * Never returns a number without saying whether it is live, because the whole point
+ * of the exercise is that a stale price and a current one are different facts.
+ * Returns usd: null when neither source has a figure — callers must render nothing
+ * rather than a zero.
+ */
+function btcUsd() {
+  if (state.btcSpot?.usd) {
+    return { usd: state.btcSpot.usd, live: true, at: state.btcSpot.fetchedAt };
+  }
+  const snap = state.market?.btcPrice ?? null;
+  return { usd: snap, live: false, at: snap ? (state.market?.generatedAt ?? null) : null };
 }
 
 /**
@@ -281,7 +328,7 @@ async function fetchMegaDirect() {
     via: "stampchain-direct",
     fetchedAt: new Date().toISOString(),
     address: MEGA_ADDRESS,
-    btcPrice: state.market?.btcPrice ?? null,
+    btcPrice: btcUsd().usd,
     units: "human",
     dispensers,
   };
@@ -841,7 +888,8 @@ function readDispenser(d) {
 
 function dispenserRow(d, r) {
   const dd = readDispenser(d);
-  const usd = state.market?.btcPrice ? ` · $${((dd.priceSats / SATS) * state.market.btcPrice).toFixed(2)}` : "";
+  const bp = btcUsd();
+  const usd = bp.usd ? ` · $${((dd.priceSats / SATS) * bp.usd).toFixed(2)}` : "";
   return `
   <div class="buy-row">
     <div class="left">
@@ -980,7 +1028,8 @@ function signalsFor(asset) {
 
 function priceAmount(sig) {
   if (sig.asset === "BTC") {
-    const usd = state.market?.btcPrice ? ` · $${(sig.amount * state.market.btcPrice).toFixed(2)}` : "";
+    const bp = btcUsd();
+    const usd = bp.usd ? ` · $${(sig.amount * bp.usd).toFixed(2)}` : "";
     return `${btcAmt(sig.amount)} BTC${usd}`;
   }
   // 24h signals name a trading PAIR ("FAUXCORNHOLE/PUDSEC"), not a single asset.
@@ -1424,12 +1473,13 @@ function renderMarket() {
       <p class="hero-sub">Two separate mechanisms operate on Counterparty, and this page keeps them
       apart because they behave very differently. Buying always happens in your own wallet — this
       site never holds funds or asks for keys.</p>
-      ${m?.btcPrice ? `<div class="stat-strip">
+      ${btcUsd().usd ? `<div class="stat-strip">
         <div class="stat"><b>${disp.length}</b><span>Open dispensers</span></div>
         <div class="stat"><b>${openOrders.length}</b><span>Open DEX orders</span></div>
         <div class="stat"><b>${filled.length}</b><span>Filled historically</span></div>
         <div class="stat"><b>${Object.keys(m.signalsByAsset || {}).length}</b><span>With price data</span></div>
-        <div class="stat"><b>$${fmt(Math.round(m.btcPrice))}</b><span>BTC</span></div>
+        <div class="stat"><b>$${fmt(Math.round(btcUsd().usd))}</b>
+          <span>BTC ${btcUsd().live ? "· live" : "· indexed"}</span></div>
       </div>` : ""}
     </section>
 
@@ -1491,7 +1541,7 @@ function listingThumb(r) {
 function dispenserCard(d, r, m) {
   // Quantities and prices here are already human units, normalised at ingest.
   const priceBtc = d.priceBtc != null ? Number(d.priceBtc) : Number(d.satoshirate || 0) / SATS;
-  const usd = m?.btcPrice ? `$${(priceBtc * m.btcPrice).toFixed(2)}` : null;
+  const usd = btcUsd().usd ? `$${(priceBtc * btcUsd().usd).toFixed(2)}` : null;
   return `
   <article class="listing" data-a="${esc(d.asset)}">
     ${listingThumb(r)}
@@ -1654,7 +1704,7 @@ function renderMega() {
 
   const sim = M.simulateMega(disp, state.megaSats);
   const tiers = M.megaTiers(disp);
-  const btcPrice = state.market?.btcPrice;
+  const btcPrice = btcUsd().usd;
   const usd = btcPrice ? `$${(sim.paymentBtc * btcPrice).toFixed(2)}` : null;
 
   const presets = tiers.map(t => t.sats);

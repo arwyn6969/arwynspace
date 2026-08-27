@@ -1,9 +1,9 @@
 {
- "generatedAt": "2026-07-29T23:45:54.414Z",
- "btcPrice": 63954.825,
+ "generatedAt": "2026-08-27T20:34:39.330Z",
+ "btcPrice": 79950.555,
  "units": "human",
  "dispensersSource": "tokenscan",
- "dispensersFetchedAt": "2026-07-29T23:45:54.414Z",
+ "dispensersFetchedAt": "2026-08-27T20:34:39.330Z",
  "dispensers": [
   {
    "asset": "RAREBEAR",
@@ -12,7 +12,7 @@
    "priceBtc": 0.0001111,
    "priceSats": 11110,
    "giveUnits": 1,
-   "remainingUnits": 4,
+   "remainingUnits": 3,
    "txHash": "2c2b0833dc680f5ceb96714c4417572a5c3f17ca1e501c57123571cf8d62e55f",
    "origin": "tokenscan"
   },
@@ -23,7 +23,7 @@
    "priceBtc": 0.00021,
    "priceSats": 21000,
    "giveUnits": 1e-8,
-   "remainingUnits": 0.00000987,
+   "remainingUnits": 0.00000986,
    "txHash": "f86d200ddbe2b53ff2022ff80324395332f74bffd7949decd9d9859d06e1c938",
    "origin": "tokenscan"
   },
@@ -89,7 +89,7 @@
    "priceBtc": 0.000069,
    "priceSats": 6900,
    "giveUnits": 1,
-   "remainingUnits": 11,
+   "remainingUnits": 8,
    "txHash": "5dae396aa809336772d9b54ac8346d3405d864c219606912f4bd848ede3f3406",
    "origin": "tokenscan"
   },
@@ -113,6 +113,17 @@
    "giveUnits": 1,
    "remainingUnits": 1,
    "txHash": "0c6370a99cf3d77eb158942cd62f1740c383ce5e3c44a1099ad9797ddabd50f1",
+   "origin": "tokenscan"
+  },
+  {
+   "asset": "A15610664756579074592",
+   "assetLongname": "BTCPUNK.1571",
+   "source": "1Cw7uQakqTLnch4HdGAiGdcBk2ynKV8T3s",
+   "priceBtc": 0.0004,
+   "priceSats": 40000,
+   "giveUnits": 1e-8,
+   "remainingUnits": 0.0033,
+   "txHash": "7b0145e702bd92c841df9b54ea2cd71003670b7bb3323ec7138d87d2867d9612",
    "origin": "tokenscan"
   },
   {
@@ -144,7 +155,7 @@
    "priceBtc": 0.000069,
    "priceSats": 6900,
    "giveUnits": 1e-8,
-   "remainingUnits": 6.5e-7,
+   "remainingUnits": 6.2e-7,
    "txHash": "98950fc0594990c04e3ea510e04ded36a4e64927c8ed6f1b1b0fb7e827a58fd0",
    "origin": "tokenscan"
   },
@@ -232,7 +243,7 @@
    "priceBtc": 0.0001,
    "priceSats": 10000,
    "giveUnits": 0.000001,
-   "remainingUnits": 0.099966,
+   "remainingUnits": 0.099964,
    "txHash": "f7f82ca794dc70420bf2d62548bca899b2c546e1350eda8ade67dc053e45bc99",
    "origin": "tokenscan"
   },
@@ -411,28 +422,51 @@
    "remainingUnits": 9,
    "txHash": "dc5a9c86da1bf07879b2210bc9277129806e505f31aab884acd4690a6933a8dc",
    "origin": "tokenscan"
-  }
- ],
- "orders": [
+  },
   {
-   "asset": "KEKAMINE",
-   "side": "ask",
-   "status": "open",
-   "giveAsset": "KEKAMINE",
-   "giveUnits": 1,
-   "giveRemaining": 1,
-   "getAsset": "XCP",
-   "getUnits": 20,
-   "getRemaining": 20,
-   "pricePerUnit": 20,
-   "priceAsset": "XCP",
-   "source": "1HGBdg3xjgLNBYwiBTezzDcBEbyEmUho2w",
-   "txHash": "2282f440191e29e94bd6d00ed28f559180765bad3e34e53e5c02a4314bca4f55",
-   "blockIndex": 953885,
-   "timestamp": 1781583167
+   "asset": "SGONEGREY",
+   "assetLongname": null,
+   "source": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j",
+   "priceBtc": 0.000212,
+   "priceSats": 21200,
+   "giveUnits": 2,
+   "remainingUnits": 109,
+   "txHash": "41022a2c360f7f5a63c6c8ce5660a2874830b1a4e4f4d37db3dd280f4a7afc31",
+   "origin": "tokenscan"
   }
  ],
+ "orders": [],
  "orderHistory": [
+  {
+   "give_asset": "SGONEGREY",
+   "give_asset_longname": null,
+   "give_quantity": 42,
+   "give_remaining": 0,
+   "get_asset": "PEEKABOOGREY",
+   "get_asset_longname": null,
+   "get_quantity": 1,
+   "get_remaining": 0,
+   "status": "filled",
+   "block_index": 964315,
+   "timestamp": 1787844835,
+   "tx_hash": "1c8b934e61b306d093f42ebbd9ee9de21c87cdb92f4f8c8ed065badd8bb7847b",
+   "source": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j"
+  },
+  {
+   "give_asset": "SGONEGREY",
+   "give_asset_longname": null,
+   "give_quantity": 111,
+   "give_remaining": 0,
+   "get_asset": "PUDSEC",
+   "get_asset_longname": null,
+   "get_quantity": 0.00000111,
+   "get_remaining": 0,
+   "status": "filled",
+   "block_index": 964310,
+   "timestamp": 1787841969,
+   "tx_hash": "d9b79e9f8acda00b487e2c4ef4e1e0f1e28c499cf139cbe182ccc48f196aed6d",
+   "source": "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j"
+  },
   {
    "give_asset": "GLAIRPEPE",
    "give_asset_longname": null,
@@ -2767,11 +2801,11 @@
    {
     "kind": "lastSale",
     "mechanism": "dex",
-    "amount": 1,
-    "asset": "LFGVEGAS",
-    "blockIndex": 944698,
-    "txHash": "e23c7bd106dd181c06c3791945e08665a04988e53ff830c3f08ecda198ce3c24",
-    "note": "18 completed trades"
+    "amount": 100000000,
+    "asset": "SGONEGREY",
+    "blockIndex": 964338,
+    "txHash": "98eb1b9678391ff38c8125fae96c83e82b93881c9a0dfc94ffac538dfa8e3165",
+    "note": "20 completed trades"
    },
    {
     "kind": "market24",
@@ -3000,10 +3034,10 @@
    {
     "kind": "floor",
     "mechanism": "dispenser",
-    "amount": 0.0006,
+    "amount": 0.0004,
     "asset": "BTC",
     "perUnits": 1e-8,
-    "note": null
+    "note": "lowest of 2 dispensers"
    }
   ],
   "A2990856786083895944": [
@@ -3047,6 +3081,15 @@
    }
   ],
   "CHONGALIEN": [
+   {
+    "kind": "lastSale",
+    "mechanism": "dex",
+    "amount": 100000,
+    "asset": "DANKROSECASH",
+    "blockIndex": 774226,
+    "txHash": "c0f4534189046f9ff07b5384cf854ca991dca3b9e1fb6011ee0ed9de1e34a035",
+    "note": null
+   },
    {
     "kind": "market24",
     "mechanism": "dex",
@@ -3440,24 +3483,6 @@
     "blockIndex": 774148,
     "txHash": "c790a8a594d8f372d41acf7d43249681565da1fff7649a0747864fadf32a0a2d",
     "note": "4 completed trades"
-   },
-   {
-    "kind": "market24",
-    "mechanism": "dex",
-    "amount": 0.00000238,
-    "asset": "DANKROSECASH/ECUADORIAN",
-    "high": 0.00000238,
-    "low": 0.00000238,
-    "changePct": 0
-   },
-   {
-    "kind": "market24",
-    "mechanism": "dex",
-    "amount": 0.00023809,
-    "asset": "BITCORN/ECUADORIAN",
-    "high": 0.00023809,
-    "low": 0.00023809,
-    "changePct": 0
    }
   ],
   "FAKEFLOONEY": [
@@ -3742,6 +3767,15 @@
   ],
   "PMOBOSHI": [
    {
+    "kind": "lastSale",
+    "mechanism": "dex",
+    "amount": 111111,
+    "asset": "DANKROSECASH",
+    "blockIndex": 774133,
+    "txHash": "b2177fda03f278e6f116214bb427af352d217b125d48b45738d779769a1ac3ef",
+    "note": "2 completed trades"
+   },
+   {
     "kind": "market24",
     "mechanism": "dex",
     "amount": 0.000009,
@@ -3883,13 +3917,6 @@
   ],
   "KEKAMINE": [
    {
-    "kind": "floor",
-    "mechanism": "dex",
-    "amount": 20,
-    "asset": "XCP",
-    "note": null
-   },
-   {
     "kind": "lastSale",
     "mechanism": "dex",
     "amount": 1,
@@ -3964,6 +3991,25 @@
     "asset": "BTC",
     "perUnits": 1,
     "note": null
+   }
+  ],
+  "SGONEGREY": [
+   {
+    "kind": "floor",
+    "mechanism": "dispenser",
+    "amount": 0.000212,
+    "asset": "BTC",
+    "perUnits": 2,
+    "note": null
+   },
+   {
+    "kind": "lastSale",
+    "mechanism": "dex",
+    "amount": 1e-8,
+    "asset": "PUDSEC",
+    "blockIndex": 964338,
+    "txHash": "98eb1b9678391ff38c8125fae96c83e82b93881c9a0dfc94ffac538dfa8e3165",
+    "note": "4 completed trades"
    }
   ]
  }

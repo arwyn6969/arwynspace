@@ -151,4 +151,44 @@ check("no conversion helper silently accepts nonsense", () => {
   return eq(U.fmtUnits(NaN, true), "—");
 });
 
+/* ------------------------------------------------- BTC price provenance */
+
+check("btcUsd falls back to the snapshot and labels it indexed, not live", () => {
+  api.state.btcSpot = null;
+  const bp = api.btcUsd();
+  eq(bp.usd, data.market.btcPrice, "must use the snapshot price when there is no spot");
+  return eq(bp.live, false, "a snapshot price must never be reported as live");
+});
+
+check("btcUsd prefers live spot over the snapshot and says so", () => {
+  api.state.btcSpot = { usd: 79891.885, fetchedAt: "2026-08-27T20:00:00.000Z" };
+  const bp = api.btcUsd();
+  eq(bp.usd, 79891.885, "live spot wins");
+  eq(bp.live, true, "and is reported as live");
+  api.state.btcSpot = null;
+  return true;
+});
+
+check("btcUsd returns null rather than zero when no price exists at all", () => {
+  // A zero price would render every USD figure as "$0.00" — a confident lie.
+  // Callers check for null and render nothing instead.
+  const savedSpot = api.state.btcSpot, savedMarket = api.state.market;
+  api.state.btcSpot = null;
+  api.state.market = { ...savedMarket, btcPrice: null };
+  const bp = api.btcUsd();
+  eq(bp.usd, null, "no price means no figure");
+  eq(bp.live, false);
+  api.state.btcSpot = savedSpot; api.state.market = savedMarket;
+  return true;
+});
+
+check("a rejected or malformed spot response leaves the snapshot in place", () => {
+  // loadBtcSpot must swallow failures: a dead price feed cannot be allowed to
+  // remove USD figures that the snapshot could still supply.
+  api.state.btcSpot = null;
+  const bp = api.btcUsd();
+  ok(bp.usd, "snapshot price still available after a failed fetch");
+  return eq(bp.live, false, "and still labelled indexed");
+});
+
 summary("Unit conversion");
