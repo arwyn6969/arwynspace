@@ -54,6 +54,7 @@ config/
   wallets.json        addresses to index, leaderboard exclusions
   overrides.json      manual media, wins over everything
 lib/
+  holderstats.mjs     per-asset distribution maths (reach, concentration)
   resolve.mjs         description classification, media sniffing, Arweave rewrite
   media.mjs           media probing, rendition choice, placeholder rejection
   xcpfetch.mjs        Counterparty client with pagination + proxy fallback
@@ -97,7 +98,7 @@ So the checks run the **shipping code** under Node against the **real snapshots*
 reimplementation, which would only prove the reimplementation agrees with itself.
 
 ```bash
-npm run test    # 68 assertions across five suites
+npm run test    # 110 assertions across six suites
 npm run probe   # field-mismatch detector; exits non-zero on an unexplained read
 ```
 
@@ -107,6 +108,7 @@ npm run probe   # field-mismatch detector; exits non-zero on an unexplained read
 | `test/units.test.mjs` | the three upstream unit conventions, effective supply, rarity, formatter drift |
 | `test/mega.test.mjs` | the dispense algorithm against its reference formula, precision, monotonicity |
 | `test/collectors.test.mjs` | totals reconcile with their own parts, ranking by pieces not units |
+| `test/collected.test.mjs` | cohorts are exhaustive, unmeasured never renders as zero, distribution arithmetic, ranking |
 | `test/schema.test.mjs` | indexed and API shapes render identically; raw values stay detectable |
 
 ### The probe, and why it can be trusted
@@ -114,21 +116,79 @@ npm run probe   # field-mismatch detector; exits non-zero on an unexplained read
 `test/probe.mjs` wraps every record in every collection in a `Proxy` that knows the union of
 keys **its own** collection carries, runs the render functions over the real data, and reports
 any read of an absent key against the exact source line that made it. Deliberate cross-schema
-tolerance — `readOrder`, `readDispenser`, `orderAssetNames` — is classified by source position,
-so those intentional double-reads cannot mask a genuine fault.
+tolerance — `readOrder`, `readDispenser`, `orderAssetNames` in `app.js`, and `readHolding` in
+`collected.js` — is classified by source position **per file**, so those intentional double-reads
+cannot mask a genuine fault, and a read one file over is not blamed on its caller.
 
 It can be trusted because it has been **made to fail on purpose**. Point it at a client with a
 known defect restored and it must exit non-zero:
 
 ```bash
-APP_JS=/tmp/broken-app.js npm run probe   # must report an unexplained read
+APP_JS=/tmp/broken-app.js npm run probe                             # must report an unexplained read
+COLLECTED_JS=/tmp/collected-broken.js node test/collected.test.mjs  # must fail
 ```
+
+Both proofs run in CI on every push, via `test/break-for-proof.cjs` (restores D9) and
+`test/break-collected-for-proof.cjs` (restores absent-as-zero in `readHolding`).
 
 That step is not ceremony. The first version of this probe reported a clean bill of health
 against a client with a real defect reintroduced, because it passed proxies in as arguments
 while the faulty function read `state.market.orders` directly and never saw one. A checker that
 cannot fail on a known bug does not give you confidence, it manufactures it. If you change the
 probe, re-prove it the same way.
+
+## Collected: which pieces have found holders
+
+`#/collected` ranks the collection by how widely each piece is actually held. It is the inverse
+of the Collectors page, and it needs different arithmetic, because a single ranked list would be
+mostly noise: of 489 indexed pieces, **198 have at least one external holder, 244 are held
+entirely in the artist's own wallets, and 47 could not be measured at all** because the upstream
+holder fetch failed.
+
+Those are three different facts and the view keeps them apart:
+
+| Cohort | Meaning |
+|---|---|
+| Collected | At least one holder who is not the artist |
+| Not yet collected | Measured, and every unit is still artist-held. A real zero |
+| Not measured | The holder fetch failed. Unknown — rendered as an em-dash, never as 0 |
+
+**Rank is by number of collectors, with reach in the next column.** Reach is external units
+over external plus artist units — the share of a piece's existing, unburned supply sitting in
+someone else's wallet. Burned units are reported separately and excluded from the denominator,
+because a burned edition is not supply anyone could still distribute.
+
+Reach was tried as the default ranking and is wrong for it: a piece transferred once, in full,
+to a single holder scores 100% and outranks CARPOPODITE (195 holders, 98.5% out). One transfer
+is not being widely collected. But holder count alone is also incomplete — PUDSEC has 140
+holders and only 5% of its supply out, so by headcount it looks like one of the most collected
+works here while the artist still holds 65.6 of its 69 million units. Rather than hide both
+problems inside a composite score, the table ranks by collectors and puts reach immediately
+beside it, where it qualifies the headcount in view. Reach is still available as its own
+ranking, labelled *Furthest distributed*, and that ranking excludes single-holder pieces from
+the headline pick for the reason above.
+
+Concentration (top-1 share, top-5 share, HHI) is measured across a piece's **external** holders
+only, over the **full** holder list before it is truncated to the twelve rows the page shows.
+Including the artist's own balance would make every undistributed piece look maximally
+concentrated, which says nothing about its collectors.
+
+`Editions out` is indivisible pieces only. A divisible balance is a token quantity, not a count
+of ownable editions, and this codebase has already conflated those once.
+
+### Why `holderDataOk` exists
+
+The indexer writes an explicit `holderDataOk: false` entry for an asset whose holder fetch
+failed, rather than omitting the asset. An absent key forces every reader to guess, and guessing
+wrong in exactly this way is this project's recurring defect — a zero read as absent (D1), an
+absent key read as a value (D3, D9, `dispenserRow`). `readHolding()` in `public/collected.js`
+is the single place that decision is made, and it is the function
+`test/break-collected-for-proof.cjs` breaks to prove the suite still catches it.
+
+One consequence worth knowing: because failed assets now get an entry, `Object.keys(byAsset)`
+is **not** a coverage figure. `assetsCovered` counts measured assets and `assetsRecorded` counts
+entries. The anti-clobber guard in `index-market.mjs` uses the former — with the latter, a fully
+rate-limited run would write 489 failure entries and pass the guard as if coverage had improved.
 
 ## Adding wallets
 
@@ -209,6 +269,7 @@ stampchain directly, and only then to the indexed snapshot.
 |---|---|---|
 | Artwork resolution (500+ assets) | 3–5 calls each, several thousand total | A live page load would take ~20 minutes |
 | Collector leaderboard (400+ assets) | one call per asset | Same, plus upstream rate limits |
+| Per-asset distribution (reach, concentration) | free — derived from the same holder call | Nothing to gain: it rides along with the leaderboard |
 | DEX orders | one call per asset | Same |
 
 These are rebuilt by `.github/workflows/refresh.yml` (daily, or on demand) which
@@ -217,7 +278,9 @@ rate-limited run from replacing good data:
 
 - `index-assets.mjs` **merges** with the previous snapshot, so a run can only add.
 - `index-market.mjs` **refuses to write** if holder coverage drops more than 10%
-  against the existing file, unless `--force` is passed.
+  against the existing file, unless `--force` is passed. Coverage means *measured*
+  assets (`assetsCovered`), not entries written — see the Collected section for why
+  that distinction is load-bearing.
 
 That second guard exists because it was learned the hard way: a rate-limited run
 once wrote a leaderboard covering 175 of 452 assets over a good one, because a

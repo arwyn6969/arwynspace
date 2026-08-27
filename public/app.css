@@ -805,3 +805,91 @@ h2.piece {
 
 /* Pair qualifier on a 24h price signal — the value is quote-per-base, not a ticker. */
 .pairnote { color: var(--muted-2); font-size: .85em; }
+
+/* ===========================================================
+   Collected — per-piece distribution
+   Mono throughout: these are chain measurements, not prose. The
+   reach bar is the one piece of chart here because "how much of
+   this left the artist's hands" is the whole question, and a
+   number alone makes 4% and 40% look equally like just a number.
+   =========================================================== */
+
+.cohort-cards {
+  display: grid; gap: .9rem; margin: 1.25rem 0 .5rem;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+.cohort-card {
+  border: 1px solid var(--line-soft); background: var(--ink-2);
+  padding: 1.1rem 1.15rem; border-radius: 2px;
+}
+.cohort-card.on { border-color: var(--accent-dim); background: var(--ink-3); }
+.cohort-n { font-family: var(--mono); font-size: 1.5rem; font-weight: 700; line-height: 1; }
+.cohort-name {
+  font-size: .7rem; text-transform: uppercase; letter-spacing: .12em;
+  margin-top: .45rem; color: var(--paper);
+}
+.cohort-card p { margin: .5rem 0 0; font-size: .78rem; color: var(--muted); line-height: 1.45; }
+
+.headline-facts {
+  display: grid; gap: .9rem; margin: 1.75rem 0 .5rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.headline-facts > div {
+  border-left: 2px solid var(--line); padding: .1rem 0 .1rem .85rem;
+  display: flex; flex-direction: column; gap: .15rem;
+}
+.headline-facts span {
+  font-size: .64rem; text-transform: uppercase; letter-spacing: .13em; color: var(--muted-2);
+}
+.headline-facts a, .headline-facts strong {
+  font-family: var(--mono); font-size: .84rem; color: var(--paper);
+  text-decoration: none; overflow-wrap: anywhere;
+}
+.headline-facts a:hover { color: var(--accent); }
+.headline-facts em { font-style: normal; font-size: .72rem; color: var(--muted); }
+
+.ctable tbody tr { cursor: pointer; }
+.ctable td.cpiece { min-width: 15rem; }
+.cpiece { display: flex; align-items: center; gap: .65rem; }
+.cpiece img {
+  width: 34px; height: 34px; object-fit: cover; border: 1px solid var(--line-soft);
+  background: var(--ink-3); flex: 0 0 auto;
+}
+.cpiece img.pixel { image-rendering: pixelated; }
+.cpiece .noimg {
+  width: 34px; height: 34px; display: grid; place-items: center; flex: 0 0 auto;
+  border: 1px solid var(--line-soft); color: var(--muted-2); font-size: .9rem;
+}
+.cnames { display: flex; flex-direction: column; line-height: 1.25; min-width: 0; }
+.cnames a { color: var(--paper); text-decoration: none; overflow-wrap: anywhere; }
+.cnames a:hover { color: var(--accent); }
+.cnames em { font-style: normal; font-size: .64rem; color: var(--muted-2); letter-spacing: .04em; }
+
+/* Reach cell: figure first, bar as support. */
+.reach { display: inline-flex; align-items: center; gap: .5rem; justify-content: flex-end; }
+.reach .bar {
+  display: inline-block; width: 54px; height: 4px; background: var(--line-soft); flex: 0 0 auto;
+}
+.reach .bar i { display: block; height: 100%; background: var(--accent); }
+
+/* An unmeasured value. Deliberately not styled like a zero. */
+.unk { color: var(--muted-2); }
+
+.distblock { margin: .35rem 0 1.25rem; }
+.distbar {
+  height: 8px; background: var(--ink-3); border: 1px solid var(--line-soft);
+  display: flex; overflow: hidden;
+}
+.distbar i.ext { display: block; height: 100%; background: var(--accent); }
+.distlegend {
+  display: flex; flex-wrap: wrap; gap: .35rem 1.1rem; margin-top: .6rem;
+  font-family: var(--mono); font-size: .7rem; color: var(--muted);
+}
+.distlegend .sw {
+  display: inline-block; width: 8px; height: 8px; margin-right: .4rem;
+  background: var(--line); vertical-align: baseline;
+}
+.distlegend .sw.ext { background: var(--accent); }
+.distlegend .sw.art { background: var(--ink-3); border: 1px solid var(--line); }
+.distlegend .sw.burn { background: var(--muted-2); }
+.facts.tight { margin-top: .9rem; }

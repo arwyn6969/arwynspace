@@ -19,7 +19,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ROOT, loadWithData, check, eq, ok, summary } from "./harness.mjs";
 
-const { api, data } = loadWithData();
+const { api, ctx, data } = loadWithData();
 const M = data.market;
 const artMap = new Map(data.artworks.artworks.filter((a) => !a.excluded).map((a) => [a.asset, a]));
 const strip = (h) => h.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
@@ -136,6 +136,52 @@ check("a raw-integer dispenser is visibly wrong, proving the scale matters", () 
   const wrong = api.readDispenser(raw).remainingUnits;
   return ok(wrong === correct * 1e8,
     `an unscaled raw value must differ by exactly 1e8, got ${wrong} vs ${correct}`);
+});
+
+/* ----------------------------------------- holders route and the Collected view */
+
+check("api/holders.js serves the snapshot unchanged rather than recomputing it", () => {
+  // api/market.js nearly shipped a 1e8 error because it rebuilt the payload itself
+  // (D14). This route must stay a pass-through, because a second implementation of
+  // the distribution maths is a second chance to get the units wrong.
+  const src = fs.readFileSync(path.join(ROOT, "api/holders.js"), "utf8");
+  ok(/res\.status\(200\)\.json\(json\)/.test(src), "route must emit the parsed snapshot as-is");
+  return ok(!/reachPct|externalUnits|\/ 1e8|\* 1e8/.test(src),
+    "route must not compute distribution figures or rescale units");
+});
+
+check("the holders route's empty fallback reads as unmeasured, never as zero holders", () => {
+  // The fallback fires when the snapshot has not been built. Every piece must then
+  // report "not measured" — an empty byAsset that rendered as 0 holders everywhere
+  // would state a measurement that was never taken.
+  const CD = ctx.window.Collected;
+  const fallback = { byAsset: {}, leaderboard: [], note: "holder snapshot not built yet" };
+  const h = CD.readHolding(fallback.byAsset["ANYTHING"]);
+  eq(h.dataOk, false, "no entry means no data");
+  return eq(h.holders, null, "and must not be reported as zero");
+});
+
+check("an enriched entry renders identically from the file or from the route", () => {
+  // The route is a pass-through, so this is really a guard against the client
+  // reading a key only one of the two paths would carry.
+  const CD = ctx.window.Collected;
+  const entry = {
+    count: 4, total: 6, top: [{ address: "C1", quantity: 3 }],
+    holderDataOk: true, externalHolders: 4, artistHolders: 2, burnHolders: 0,
+    externalUnits: 9, artistUnits: 11, burnUnits: 0,
+    reachPct: 45, top1Share: 33.3, top5Share: 100, hhi: 2800, source: "stampchain",
+  };
+  const fromFile = CD.readHolding(entry);
+  const fromRoute = CD.readHolding(JSON.parse(JSON.stringify(entry)));
+  return eq(fromFile, fromRoute, "the same entry must normalise identically");
+});
+
+check("distribution keys are absent from the legacy shape, and that is detectable", () => {
+  const CD = ctx.window.Collected;
+  const legacy = CD.readHolding({ count: 4, total: 6, top: [] });
+  eq(legacy.measured, false, "legacy must be flagged unmeasured");
+  return eq([legacy.reachPct, legacy.top1Share, legacy.hhi], [null, null, null],
+    "and must not fabricate distribution figures");
 });
 
 summary("Schema parity");

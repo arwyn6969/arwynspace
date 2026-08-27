@@ -32,6 +32,21 @@ import { loadWithData, ROOT, CLIENT_PATH } from "./harness.mjs";
  */
 const TOLERANT_FNS = ["readOrder", "readDispenser", "orderAssetNames"];
 
+/**
+ * The client is more than one file, and the tolerant normalisers are not all in
+ * app.js. readHolding() in collected.js exists precisely to accept both the legacy
+ * holder snapshot (count/total/top) and the enriched one (reachPct, holderDataOk),
+ * so it reads keys it knows may be absent and branches on the result. Classifying
+ * per file keeps the "attributed to an exact line" property instead of blaming the
+ * app.js caller for a read that happened one file over.
+ */
+const TOLERANT_BY_FILE = {
+  "app.js": TOLERANT_FNS,
+  "collected.js": ["readHolding", "assetStats", "salesIndex"],
+};
+
+const PROBED_FILES = ["app.js", "collected.js"];
+
 const BUILTIN = new Set([
   "then", "toJSON", "constructor", "valueOf", "toString", "length", "name",
   "inspect", "hasOwnProperty", "isPrototypeOf", Symbol.toPrimitive,
@@ -47,9 +62,9 @@ function unionKeys(rows) {
 }
 
 /** Line ranges of the declared tolerant normalisers, read from the source itself. */
-function tolerantRanges(srcLines) {
+function tolerantRanges(srcLines, fns) {
   const ranges = [];
-  for (const name of TOLERANT_FNS) {
+  for (const name of fns) {
     const re = new RegExp(`^(?:function\\s+${name}\\s*\\(|const\\s+${name}\\s*=)`);
     const start = srcLines.findIndex((l) => re.test(l));
     if (start === -1) continue;
@@ -67,13 +82,13 @@ function tolerantRanges(srcLines) {
 /** First app.js frame's line number — position is reliable where the name is not. */
 function blame() {
   for (const line of new Error().stack.split("\n")) {
-    const loc = line.match(/app\.js:(\d+):/);
+    const loc = line.match(/(app|collected)\.js:(\d+):/);
     if (loc) {
       const fn = line.match(/at\s+([A-Za-z_$][\w$]*)\s+\(/);
-      return { fn: fn ? fn[1] : "(anonymous)", line: Number(loc[1]) };
+      return { file: `${loc[1]}.js`, fn: fn ? fn[1] : "(anonymous)", line: Number(loc[2]) };
     }
   }
-  return { fn: "(unknown)", line: null };
+  return { file: "(unknown)", fn: "(unknown)", line: null };
 }
 
 function probe(row, collection, keys) {
@@ -90,7 +105,7 @@ function probe(row, collection, keys) {
   });
 }
 
-const { api, data } = loadWithData();
+const { api, ctx, data } = loadWithData();
 
 const collections = {
   "artworks.artworks": data.artworks.artworks,
@@ -98,6 +113,10 @@ const collections = {
   "market.orders": data.market.orders,
   "market.orderHistory": data.market.orderHistory,
   "holders.leaderboard": data.holders.leaderboard || [],
+  // byAsset is keyed by asset rather than an array, so the union is taken over its
+  // VALUES. It was never probed before, which is why the Collected view's reads had
+  // no contract at all until now.
+  "holders.byAsset": Object.values(data.holders.byAsset || {}),
 };
 
 const keysOf = {};
@@ -129,7 +148,11 @@ const pLead = P(data.holders.leaderboard || [], "holders.leaderboard");
  */
 api.state.data = { ...data.artworks, artworks: pArt };
 api.state.market = { ...data.market, dispensers: pDisp, orders: pOrders, orderHistory: pHist };
-api.state.holders = { ...data.holders, leaderboard: pLead };
+const pByAsset = {};
+for (const [asset, entry] of Object.entries(data.holders.byAsset || {})) {
+  pByAsset[asset] = probe(entry, "holders.byAsset", keysOf["holders.byAsset"]);
+}
+api.state.holders = { ...data.holders, leaderboard: pLead, byAsset: pByAsset };
 
 const artMap = new Map(pArt.map((a) => [a.asset, a]));
 
@@ -161,25 +184,59 @@ for (const o of pHist) {
 }
 safe("statusBreakdown", () => api.statusBreakdown(pHist));
 
+/**
+ * The Collected view, over the proxied holder snapshot. Exercised through
+ * collectedRows() rather than by handing rows in, for the same reason the D9 lesson
+ * demanded: it reads state.holders.byAsset directly, so only a proxy installed in
+ * state is actually seen.
+ */
+const CD = ctx.window.Collected;
+const cdRows = safe("collectedRows", () => api.collectedRows()) || [];
+for (const [i, r] of cdRows.entries()) {
+  safe("collectedRow", () => api.collectedRow(r, i, true));
+  safe("collectedRow/nodist", () => api.collectedRow(r, i, false));
+}
+safe("collectedSummary", () => CD.collectedSummary(cdRows));
+safe("cohorts", () => CD.cohorts(cdRows));
+for (const [m] of CD.METRICS) safe(`rankBy/${m}`, () => CD.rankBy(cdRows, m));
+for (const cohort of ["collected", "uncollected", "unknown"]) {
+  safe(`renderCollected/${cohort}`, () => {
+    api.state.collectedCohort = cohort;
+    api.renderCollected();
+  });
+}
+api.state.collectedCohort = "collected";
+
 /* ---- report ---- */
 
 const grouped = new Map();
 for (const m of misses) {
-  const k = `${m.collection}|${m.key}|${m.fn}|${m.line}`;
+  const k = `${m.collection}|${m.key}|${m.file}|${m.fn}|${m.line}`;
   grouped.set(k, (grouped.get(k) || 0) + 1);
 }
 
-const srcLines = fs.readFileSync(CLIENT_PATH, "utf8").split("\n");
-const ranges = tolerantRanges(srcLines);
-console.log("\nTolerant-by-design regions (from source):");
-for (const r of ranges) console.log(`  ${r.name.padEnd(18)} app.js:${r.start}-${r.end}`);
+const SRC_OF = {
+  "app.js": CLIENT_PATH,
+  "collected.js": path.join(ROOT, "public/collected.js"),
+};
 
-const inTolerant = (line) => ranges.some((r) => line >= r.start && line <= r.end);
+const rangesByFile = {};
+console.log("\nTolerant-by-design regions (from source):");
+for (const file of PROBED_FILES) {
+  const lines = fs.readFileSync(SRC_OF[file], "utf8").split("\n");
+  rangesByFile[file] = tolerantRanges(lines, TOLERANT_BY_FILE[file] || []);
+  for (const r of rangesByFile[file]) {
+    console.log(`  ${r.name.padEnd(18)} ${file}:${r.start}-${r.end}`);
+  }
+}
+
+const inTolerant = (file, line) =>
+  (rangesByFile[file] || []).some((r) => line >= r.start && line <= r.end);
 
 const rows = [...grouped.entries()].map(([k, n]) => {
-  const [collection, key, fn, line] = k.split("|");
+  const [collection, key, file, fn, line] = k.split("|");
   const ln = Number(line);
-  return { collection, key, fn, line: ln, n, tolerant: inTolerant(ln) };
+  return { collection, key, file, fn, line: ln, n, tolerant: inTolerant(file, ln) };
 });
 
 const bugs = rows.filter((r) => !r.tolerant);
@@ -191,7 +248,7 @@ console.log(`${rows.length} distinct sites — ${bugs.length} unexplained, ${tol
 if (bugs.length) {
   console.log("UNEXPLAINED (no fallback — investigate each):");
   for (const b of bugs.sort((a, b2) => b2.n - a.n)) {
-    console.log(`  ${b.collection.padEnd(22)} .${b.key.padEnd(20)} ${b.fn}  app.js:${b.line}  (${b.n}x)`);
+    console.log(`  ${b.collection.padEnd(22)} .${b.key.padEnd(20)} ${b.fn}  ${b.file}:${b.line}  (${b.n}x)`);
   }
 } else {
   console.log("UNEXPLAINED: none. Every absent-key read has a declared fallback.");
@@ -199,7 +256,7 @@ if (bugs.length) {
 
 console.log("\nKNOWN-TOLERANT (normalisers trying both schemas — expected):");
 const byFn = {};
-for (const t of tolerated) (byFn[t.fn] = byFn[t.fn] || []).push(t.key);
+for (const t of tolerated) (byFn[`${t.file} ${t.fn}`] = byFn[`${t.file} ${t.fn}`] || []).push(t.key);
 for (const [fn, keys] of Object.entries(byFn)) {
   console.log(`  ${fn}: ${[...new Set(keys)].join(", ")}`);
 }

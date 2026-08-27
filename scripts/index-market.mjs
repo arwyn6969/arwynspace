@@ -15,6 +15,7 @@ import path from "node:path";
 import { xcp } from "../lib/xcpfetch.mjs";
 import { allOrders, normalizeOrder } from "../lib/tokenscan.mjs";
 import { scanAssets, priceSignals } from "../lib/markets.mjs";
+import { distributionStats, holderDataMissing } from "../lib/holderstats.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "..");
 const STAMPCHAIN = "https://stampchain.io/api/v2";
@@ -26,6 +27,15 @@ const index = JSON.parse(fs.readFileSync(path.join(ROOT, "data/artworks.json"), 
 const artworks = index.artworks.filter(a => !a.excluded);
 const addresses = cfg.addresses.map(a => (typeof a === "string" ? a : a.address));
 const EXCLUDE = new Set([...(cfg.excludeFromLeaderboard || []), ...addresses]);
+
+/**
+ * EXCLUDE is one bucket for leaderboard purposes, but distribution stats need the
+ * distinction: units sitting in the artist's own wallets are undistributed supply,
+ * while units at a burn address are gone. Lumping them together would make a piece
+ * whose supply was burned look identical to one the artist never sold.
+ */
+const ARTIST = new Set(addresses);
+const BURN = new Set((cfg.excludeFromLeaderboard || []).filter(a => !ARTIST.has(a)));
 
 /**
  * Stampchain fetch with explicit rate-limit handling.
@@ -159,19 +169,28 @@ async function holdersFor(asset, divisible) {
   const scale = divisible ? 1e8 : 1;
 
   const d = await scJson(`/stamps/${encodeURIComponent(asset)}/holders?limit=500`);
-  if (d?.__error) return null;            // fetch failed — NOT the same as no holders
+  // A failed fetch is NOT the same as no holders, and the difference is now carried
+  // out of here rather than collapsed into null: the caller records which of the two
+  // happened so the UI can say "not measured" instead of showing a zero.
+  if (d?.__error) return { rows: null, source: null, reason: d.__error };
   const rows = d?.data;
   if (Array.isArray(rows) && rows.length) {
-    return rows
-      .filter(h => h.address && Number(h.amt) > 0)
-      .map(h => ({ address: h.address, units: Number(h.amt) / scale }));
+    return {
+      source: "stampchain",
+      rows: rows
+        .filter(h => h.address && Number(h.amt) > 0)
+        .map(h => ({ address: h.address, units: Number(h.amt) / scale })),
+    };
   }
   try {
     const x = await xcp(`/v2/assets/${encodeURIComponent(asset)}/holders?limit=500`, { retries: 1 });
-    return (x?.result ?? [])
-      .filter(h => h.address && Number(h.quantity) > 0)
-      .map(h => ({ address: h.address, units: Number(h.quantity) / scale }));
-  } catch { return null; }
+    return {
+      source: "counterparty",
+      rows: (x?.result ?? [])
+        .filter(h => h.address && Number(h.quantity) > 0)
+        .map(h => ({ address: h.address, units: Number(h.quantity) / scale })),
+    };
+  } catch (e) { return { rows: null, source: null, reason: String(e.message || e) }; }
 }
 
 async function holders() {
@@ -181,8 +200,16 @@ async function holders() {
 
   for (let i = 0; i < artworks.length; i++) {
     const a = artworks[i];
-    const clean = await holdersFor(a.asset, a.divisible);
-    if (!clean) { failed++; continue; }
+    const got = await holdersFor(a.asset, a.divisible);
+    const clean = got?.rows;
+    if (!clean) {
+      // Recorded, not skipped. A missing key made 53 assets indistinguishable from
+      // assets nobody holds; an explicit holderDataOk: false is a fact the view can
+      // render honestly as "not measured".
+      failed++;
+      byAsset[a.asset] = { count: null, total: null, top: [], ...holderDataMissing(got?.reason ?? null) };
+      continue;
+    }
 
     const external = clean.filter(h => !EXCLUDE.has(h.address));
     byAsset[a.asset] = {
@@ -191,6 +218,9 @@ async function holders() {
       // `quantity` is kept in human units here so the UI never rescales twice.
       top: [...external].sort((x, y) => y.units - x.units).slice(0, 12)
              .map(h => ({ address: h.address, quantity: h.units })),
+      // Distribution measured over the FULL list, before the slice(0, 12) above.
+      ...distributionStats(clean, { artist: ARTIST, burn: BURN }),
+      source: got.source,
     };
 
     for (const h of external) {
@@ -300,8 +330,21 @@ async function main() {
   if (only !== "market") {
     console.log("\nHolders…");
     const h = await holders();
-    const newAssets = Object.keys(h.byAsset).length;
-    console.log(`  ${h.leaderboard.length} distinct collectors across ${newAssets} assets`);
+    /**
+     * Count assets actually MEASURED, not entries written.
+     *
+     * Failed fetches now get a recorded `holderDataOk: false` entry so the UI can
+     * say "not measured" instead of showing a zero — which means Object.keys() is
+     * no longer a coverage figure. Left as it was, a fully rate-limited run would
+     * write 489 entries, every one of them a failure, and sail straight through the
+     * guard below as if coverage had IMPROVED. The guard exists because that
+     * scenario already destroyed a good leaderboard once.
+     */
+    const measured = Object.values(h.byAsset).filter(v => v.holderDataOk !== false).length;
+    const newAssets = measured;
+    const recorded = Object.keys(h.byAsset).length;
+    console.log(`  ${h.leaderboard.length} distinct collectors across ${measured} measured assets`);
+    console.log(`  (${recorded} entries written, ${recorded - measured} recorded as unmeasured)`);
 
     // Never let a partial run clobber a better snapshot. A rate-limited pass can
     // finish with a fraction of the coverage, and silently replacing good data with
@@ -309,7 +352,10 @@ async function main() {
     // to 412 over 175. Same guard the asset index already has.
     const outPath = path.join(ROOT, "data/holders.json");
     const prior = readJsonSafe(outPath);
-    const priorAssets = prior ? Object.keys(prior.byAsset || {}).length : 0;
+    const priorAssets = prior
+      ? (prior.assetsCovered
+         ?? Object.values(prior.byAsset || {}).filter(v => v.holderDataOk !== false).length)
+      : 0;
 
     if (prior && newAssets < priorAssets * 0.9 && !process.argv.includes("--force")) {
       console.error(`  REFUSING TO WRITE: this run covered ${newAssets} assets, the existing snapshot has ${priorAssets}.`);
@@ -319,8 +365,15 @@ async function main() {
     }
 
     fs.writeFileSync(outPath,
-      JSON.stringify({ generatedAt: new Date().toISOString(), assetsCovered: newAssets, ...h }, null, 1));
-    console.log(`wrote data/holders.json (${newAssets} assets)`);
+      JSON.stringify({
+        generatedAt: new Date().toISOString(),
+        // Measured, as before. assetsRecorded is the larger number including the
+        // explicit failures, so the two can never be confused for each other.
+        assetsCovered: measured,
+        assetsRecorded: recorded,
+        ...h,
+      }, null, 1));
+    console.log(`wrote data/holders.json (${measured} measured of ${recorded} recorded)`);
   }
 }
 

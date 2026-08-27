@@ -13,6 +13,7 @@ const html = fs.readFileSync(P("index.html"), "utf8");
 const css  = fs.readFileSync(P("app.css"), "utf8");
 const js   = fs.readFileSync(P("app.js"), "utf8");
 const colJs = fs.readFileSync(P("collectors.js"), "utf8");
+const cdJs  = fs.readFileSync(P("collected.js"), "utf8");
 const megaJs = fs.readFileSync(P("megadispenser.js"), "utf8");
 const cfg  = JSON.parse(fs.readFileSync(path.join(ROOT, "config/wallets.json"), "utf8"));
 
@@ -52,12 +53,13 @@ const safe = o => JSON.stringify(o).replace(/<\//g, "<\\/");
 let out = html
   .replace(/<link rel="stylesheet" href="\.\/app\.css">/, `<style>\n${css}\n</style>`)
   .replace(/<script src="\.\/collectors\.js"><\/script>\s*/, "")
+  .replace(/<script src="\.\/collected\.js"><\/script>\s*/, "")
   .replace(/<script src="\.\/megadispenser\.js"><\/script>\s*/, "")
   .replace(/<script src="\.\/app\.js"><\/script>/,
     `<script>window.__ARTWORKS__=${safe(art)};` +
     (market ? `window.__MARKET__=${safe(market)};` : "") +
     (holders ? `window.__HOLDERS__=${safe(holders)};` : "") +
-    `</script>\n<script>\n${colJs}\n</script>\n<script>\n${megaJs}\n</script>\n<script>\n${js}\n</script>`);
+    `</script>\n<script>\n${colJs}\n</script>\n<script>\n${cdJs}\n</script>\n<script>\n${megaJs}\n</script>\n<script>\n${js}\n</script>`);
 
 const dest = path.join(ROOT, "dist");
 fs.mkdirSync(dest, { recursive: true });

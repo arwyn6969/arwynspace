@@ -15,6 +15,9 @@ const state = {
   query: "",
   sort: "newest",          // newest | oldest | name | editions
   collectorFilter: "all",  // all | stamps | xcp
+  collectedCohort: "collected",  // collected | uncollected | unknown
+  collectedKind: "all",          // all | editions | tokens | stamps
+  collectedMetric: "holders",    // see Collected.METRICS
   megaSats: 111100,        // simulator input, in satoshis
   mega: null,              // live mega dispenser state from /api/mega
   stats: null,             // live headline figures from /api/stats
@@ -368,6 +371,7 @@ function route() {
   document.querySelectorAll(".nav a").forEach(a => a.classList.remove("on"));
 
   if (seg === "art" && arg) return renderDetail(decodeURIComponent(arg));
+  if (seg === "collected")  { markNav("collected");  return renderCollected(); }
   if (seg === "collectors") { markNav("collectors"); return renderCollectors(); }
   if (seg === "market")     { markNav("market");     return renderMarket(); }
   if (seg === "mega")       { markNav("mega"); loadMega(); return renderMega(); }
@@ -675,6 +679,10 @@ function renderDetail(asset) {
 
   const { dispensers, orders } = listingsFor(r.asset, r.assetLongname);
   const holders = state.holders?.byAsset?.[r.asset] || null;
+  // Read through the same normaliser the Collected view uses, so the two pages can
+  // never disagree about the same piece — and so an unmeasured piece renders as
+  // "not measured" here too rather than silently omitting the row.
+  const dist = window.Collected ? window.Collected.readHolding(holders) : null;
 
   view.innerHTML = `
   <div class="wrap">
@@ -713,7 +721,10 @@ function renderDetail(asset) {
           ${r.media?.imageMime ? fact("Format", esc(r.media.imageMime)) : ""}
           ${(r.media?.originalDims || r.media?.dims) ? fact("Dimensions", (() => { const d = r.media.originalDims || r.media.dims; return `${d.w} × ${d.h}`; })()) : ""}
           ${fact("Scaling", r.pixelate ? "nearest-neighbour (pixel art)" : "smooth")}
-          ${holders ? fact("Holders", fmt(holders.count)) : ""}
+          ${dist ? fact("Holders", dist.dataOk
+            ? (dist.holders > 0 ? fmt(dist.holders) : `<span class="no">none yet — artist-held</span>`)
+            : `<span class="no">not measured</span>`) : ""}
+          ${dist?.measured ? fact("Reach", `${pctOf(dist.reachPct)} <span class="hint">of existing supply held by collectors</span>`) : ""}
           ${fact("Issuer", `<a href="${LINKS.addr(r.issuer)}" target="_blank" rel="noopener noreferrer">${esc(shortAddr(r.issuer))}</a>`)}
           ${r.artist ? fact("Artist", esc(r.artist)) : ""}
           ${r.tags?.length ? fact("Tags", r.tags.map(t => esc(t)).join(", ")) : ""}
@@ -743,8 +754,27 @@ function renderDetail(asset) {
           ${r.website ? `<a class="btn ghost" href="${esc(/^https?:/.test(r.website) ? r.website : "https://" + r.website)}" target="_blank" rel="noopener noreferrer">Artist link</a>` : ""}
         </div>
 
+        ${dist?.measured && dist.holders > 0 ? `
+          <div class="section-h"><h3>Distribution</h3><div class="rule"></div></div>
+          <div class="distblock">
+            <div class="distbar">
+              <i class="ext" style="width:${Math.max(0, Math.min(100, dist.reachPct || 0)).toFixed(1)}%"></i>
+            </div>
+            <div class="distlegend">
+              <span><i class="sw ext"></i>${pctPair(dist.reachPct).part} with collectors</span>
+              <span><i class="sw art"></i>${pctPair(dist.reachPct).rest} still artist-held</span>
+              ${dist.burnUnits ? `<span><i class="sw burn"></i>${qty(dist.burnUnits, r.divisible)} burned</span>` : ""}
+            </div>
+            <dl class="facts tight">
+              ${dist.holders > 1 ? fact("Top holder", `${pctOf(dist.top1Share)} of what's out`) : ""}
+              ${dist.holders > 5 ? fact("Top five", `${pctOf(dist.top5Share)} of what's out`) : ""}
+              ${dist.holders > 1 && concLabel(dist.hhi) ? fact("Spread", esc(concLabel(dist.hhi))) : ""}
+              ${!r.divisible && dist.externalUnits != null ? fact("Editions out", fmt(Math.round(dist.externalUnits))) : ""}
+            </dl>
+          </div>` : ""}
+
         ${holders?.top?.length ? `
-          <div class="section-h"><h3>Held by</h3><div class="rule"></div><span class="count">${fmt(holders.count)}</span></div>
+          <div class="section-h"><h3>Held by</h3><div class="rule"></div><span class="count">${fmt(dist?.holders ?? holders.count)}</span></div>
           <div class="table-scroll"><table class="table">
             <thead><tr><th class="rank">#</th><th>Address</th><th class="num">Editions</th></tr></thead>
             <tbody>${holders.top.map((h, i) => `
@@ -979,7 +1009,7 @@ function signalBlock(asset) {
   </div>`;
 }
 
-/* ---------------- collectors ---------------- */
+/* ---------------- shared: the collection, keyed ---------------- */
 
 const COLLECTORS_SHOWN = 150;
 
@@ -996,6 +1026,238 @@ const COLLECTORS_SHOWN = 150;
 function artworkMap() {
   return new Map(artworks().map(a => [a.asset, a]));
 }
+
+/* ---------------- collected ---------------- */
+
+const COLLECTED_SHOWN = 120;
+
+/** Percentages: one decimal below 10, none above, em-dash for genuinely absent. */
+const pctOf = n => (n == null ? "—" : `${Number(n).toFixed(Number(n) < 10 && Number(n) > 0 ? 1 : 0)}%`);
+
+/**
+ * A percentage and its complement, formatted with the SAME precision so the pair
+ * reads as a whole. pctOf's variable precision is right for a lone figure but wrong
+ * for two halves of one bar: 98.5 and 1.5 came out as "99%" and "1.5%", which
+ * appears to sum to 100.5 and makes a correct measurement look like a broken one.
+ */
+function pctPair(n) {
+  if (n == null) return { part: "—", rest: "—" };
+  const v = Math.max(0, Math.min(100, Number(n)));
+  const dp = (v % 1 === 0 && (100 - v) % 1 === 0) ? 0 : 1;
+  return { part: `${v.toFixed(dp)}%`, rest: `${(100 - v).toFixed(dp)}%` };
+}
+
+/**
+ * Herfindahl over external holders, read as a sentence. The raw index means nothing
+ * to a reader; the thresholds are the conventional competition-authority bands.
+ */
+function concLabel(hhi) {
+  if (hhi == null) return null;
+  if (hhi >= 5000) return "one holder dominates";
+  if (hhi >= 2500) return "concentrated";
+  if (hhi >= 1500) return "moderately spread";
+  return "widely spread";
+}
+
+/** Every piece with its holder-distribution stats, ready to rank. */
+function collectedRows() {
+  const CD = window.Collected;
+  const map = artworkMap();
+  const sales = CD.salesIndex(state.market, map);
+  const byAsset = state.holders?.byAsset || {};
+  return artworks().map(a => CD.assetStats(a, byAsset[a.asset], sales));
+}
+
+function renderCollected() {
+  const CD = window.Collected;
+
+  if (!state.holders) {
+    view.innerHTML = `<div class="wrap"><section class="hero"><h1>Collected</h1></section>
+      <div class="loading"><span class="spinner"></span>Reading holder balances…</div></div>`;
+    return;
+  }
+
+  const rows = collectedRows();
+  const summary = CD.collectedSummary(rows);
+  const groups = CD.cohorts(rows);
+  const cohort = state.collectedCohort;
+
+  let pool = groups[cohort] || groups.collected;
+  if (state.collectedKind === "editions") pool = pool.filter(r => !r.divisible);
+  if (state.collectedKind === "tokens")   pool = pool.filter(r => r.divisible);
+  if (state.collectedKind === "stamps")   pool = pool.filter(r => r.isStamp);
+
+  const q = state.query.trim().toLowerCase();
+  if (q) pool = pool.filter(r => r.name.toLowerCase().includes(q) || r.title.toLowerCase().includes(q));
+
+  // Ranking only applies where the numbers exist. The unknown cohort has nothing to
+  // rank by, so it is listed by name rather than pretending to an order.
+  const metric = cohort === "unknown" ? "name" : state.collectedMetric;
+  const ranked = CD.rankBy(pool, metric);
+  const shown = ranked.slice(0, COLLECTED_SHOWN);
+
+  view.innerHTML = `
+  <div class="wrap">
+    <section class="hero" style="padding-bottom:1.25rem">
+      <h1>Collected</h1>
+      <p class="hero-sub">Which pieces have actually found holders. Rank is by number of
+      <strong>collectors</strong>, with <strong>reach</strong> — the share of a piece's existing
+      supply sitting in someone else's wallet — in the next column, because a large holder count
+      can still mean the artist holds nearly all of it.</p>
+      <div class="stat-strip">
+        <div class="stat"><b>${fmt(summary.collected)}</b><span>Pieces collected</span></div>
+        <div class="stat"><b>${pctOf(summary.collectedPctOfMeasured)}</b><span>Of those measured</span></div>
+        <div class="stat"><b>${fmt(summary.relationships)}</b><span>Holder relationships</span></div>
+        <div class="stat"><b>${summary.hasDistribution ? pctOf(summary.medianReach) : fmt(summary.medianHolders)}</b>
+          <span>${summary.hasDistribution ? "Median reach" : "Median holders"}</span></div>
+      </div>
+    </section>
+
+    ${summary.hasDistribution ? "" : `<div class="notice">Reach and concentration are not in
+      this snapshot yet — they are measured over the full holder list when the holder index
+      next runs. Holder counts and market activity below are current.</div>`}
+
+    <div class="section-h"><h3>Where the collection stands</h3><div class="rule"></div></div>
+    <div class="cohort-cards">
+      <div class="cohort-card ${cohort === "collected" ? "on" : ""}">
+        <div class="cohort-n">${fmt(summary.collected)}</div>
+        <div class="cohort-name">Collected</div>
+        <p>Held by at least one address that isn't the artist.</p>
+      </div>
+      <div class="cohort-card ${cohort === "uncollected" ? "on" : ""}">
+        <div class="cohort-n">${fmt(summary.uncollected)}</div>
+        <div class="cohort-name">Not yet collected</div>
+        <p>Issued and held entirely in the artist's own wallets.</p>
+      </div>
+      <div class="cohort-card ${cohort === "unknown" ? "on" : ""}">
+        <div class="cohort-n">${fmt(summary.unknown)}</div>
+        <div class="cohort-name">Not measured</div>
+        <p>The holder fetch failed for these. Unknown — not zero.</p>
+      </div>
+    </div>
+
+    ${summary.widest || summary.deepestReach ? `
+      <div class="headline-facts">
+        ${summary.widest ? `<div><span>Most collectors</span>
+          <a href="#/art/${encodeURIComponent(summary.widest.asset)}">${esc(summary.widest.name)}</a>
+          <em>${fmt(summary.widest.holders)} addresses</em></div>` : ""}
+        ${summary.deepestReach && summary.deepestReach.measured ? `<div><span>Furthest distributed
+          (${CD.REACH_HEADLINE_MIN_HOLDERS}+ collectors)</span>
+          <a href="#/art/${encodeURIComponent(summary.deepestReach.asset)}">${esc(summary.deepestReach.name)}</a>
+          <em>${pctOf(summary.deepestReach.reachPct)} out, ${fmt(summary.deepestReach.holders)} holders</em></div>` : ""}
+        ${summary.mostConcentrated ? `<div><span>Most concentrated</span>
+          <a href="#/art/${encodeURIComponent(summary.mostConcentrated.asset)}">${esc(summary.mostConcentrated.name)}</a>
+          <em>top holder has ${pctOf(summary.mostConcentrated.top1Share)}</em></div>` : ""}
+        ${summary.withSales ? `<div><span>Traded on the DEX</span>
+          <strong>${fmt(summary.withSales)} pieces</strong>
+          <em>${fmt(summary.withDispensers)} with a dispenser</em></div>` : ""}
+      </div>` : ""}
+
+    <div class="toolbar" style="margin-top:2.5rem">
+      <div class="chips">
+        ${dchip("collected", "Collected", groups.collected.length)}
+        ${dchip("uncollected", "Not yet collected", groups.uncollected.length)}
+        ${dchip("unknown", "Not measured", groups.unknown.length)}
+      </div>
+      <div class="chips">
+        ${kchip("all", "All")}
+        ${kchip("editions", "Editions")}
+        ${kchip("tokens", "Divisible")}
+        ${kchip("stamps", "Stamps")}
+      </div>
+      ${cohort === "unknown" ? "" : collectedSortControl()}
+      <label class="search">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" placeholder="Search piece" value="${esc(state.query)}" aria-label="Search pieces">
+      </label>
+    </div>
+
+    ${metric === "editions" ? `<p class="explainer">Editions out counts indivisible pieces only.
+      A divisible balance is a token quantity, not a number of ownable editions.</p>` : ""}
+    ${metric === "concentration" || metric === "spread"
+      ? `<p class="explainer">Concentration is measured across a piece's external holders only,
+         so pieces with a single holder are excluded — one holder is not a distribution.</p>` : ""}
+
+    ${shown.length
+      ? `<div class="table-scroll"><table class="table ctable">
+          <thead><tr>
+            <th class="rank">#</th><th>Piece</th>
+            <th class="num">Holders</th>
+            ${summary.hasDistribution ? `<th class="num">Reach</th><th class="num">Top holder</th>` : ""}
+            <th class="num">Editions out</th><th class="num">Market</th>
+          </tr></thead>
+          <tbody>${shown.map((r, i) => collectedRow(r, i, summary.hasDistribution)).join("")}</tbody>
+        </table></div>`
+      : `<div class="empty">Nothing matches that.</div>`}
+    ${ranked.length > COLLECTED_SHOWN
+      ? `<p class="foot-note" style="padding:1.5rem 0 4rem">Showing ${COLLECTED_SHOWN} of ${fmt(ranked.length)}.</p>`
+      : `<div style="height:4rem"></div>`}
+  </div>`;
+
+  view.querySelectorAll(".chip[data-c]").forEach(el =>
+    el.addEventListener("click", () => { state.collectedCohort = el.dataset.c; renderCollected(); }));
+  view.querySelectorAll(".chip[data-k]").forEach(el =>
+    el.addEventListener("click", () => { state.collectedKind = el.dataset.k; renderCollected(); }));
+  view.querySelectorAll(".sortbtn").forEach(el =>
+    el.addEventListener("click", () => { state.collectedMetric = el.dataset.s; renderCollected(); }));
+  const input = $(".search input", view);
+  if (input) input.addEventListener("input", e => { state.query = e.target.value; renderCollected(); });
+  view.querySelectorAll(".ctable tr[data-a]").forEach(el =>
+    el.addEventListener("click", e => {
+      if (e.target.closest("a")) return;
+      location.hash = `#/art/${encodeURIComponent(el.dataset.a)}`;
+    }));
+}
+
+const dchip = (c, label, n) =>
+  `<button class="chip ${state.collectedCohort === c ? "on" : ""}" data-c="${c}">${esc(label)}<span class="n">${n}</span></button>`;
+const kchip = (k, label) =>
+  `<button class="chip ${state.collectedKind === k ? "on" : ""}" data-k="${k}">${esc(label)}</button>`;
+
+function collectedSortControl() {
+  return `<div class="sortbar" role="group" aria-label="Rank pieces">
+    ${window.Collected.METRICS.map(([k, label]) =>
+      `<button class="sortbtn ${state.collectedMetric === k ? "on" : ""}" data-s="${k}">${esc(label)}</button>`).join("")}
+  </div>`;
+}
+
+function collectedRow(r, i, showDist) {
+  const th = thumbOf(r.artwork);
+  // An unmeasured piece gets an em-dash, never a zero. The whole point of the
+  // cohort split is that "nobody holds this" and "we could not find out" are
+  // different facts, and a 0 in this cell would erase the difference.
+  const holders = r.dataOk ? fmt(r.holders) : `<span class="unk" title="Holder data unavailable">—</span>`;
+  const eds = r.divisible
+    ? `<span class="hint">n/a</span>`
+    : (r.editionsOut != null ? fmt(Math.round(r.editionsOut)) : `<span class="unk">—</span>`);
+
+  return `
+  <tr data-a="${esc(r.asset)}" class="crow-t">
+    <td class="rank ${i < 3 ? "top" : ""}">${i + 1}</td>
+    <td class="cpiece">
+      ${th ? `<img src="${esc(th)}" alt="" loading="lazy" class="${r.artwork.pixelate ? "pixel" : ""}">`
+           : `<span class="noimg" aria-hidden="true">⌗</span>`}
+      <span class="cnames">
+        <a href="#/art/${encodeURIComponent(r.asset)}">${esc(r.name)}</a>
+        <em>${r.isStamp ? `Stamp${r.artwork.stampNumber ? " #" + r.artwork.stampNumber : ""}` : "Counterparty"}${r.divisible ? " · divisible" : ""}</em>
+      </span>
+    </td>
+    <td class="num">${holders}</td>
+    ${showDist ? `
+      <td class="num">${r.measured ? `<span class="reach"><b>${pctOf(r.reachPct)}</b>
+        <span class="bar"><i style="width:${Math.max(0, Math.min(100, r.reachPct || 0)).toFixed(1)}%"></i></span></span>`
+        : `<span class="unk">—</span>`}</td>
+      <td class="num">${r.measured && r.holders > 1
+        ? `${pctOf(r.top1Share)}<span class="hint"> ${esc(concLabel(r.hhi) || "")}</span>`
+        : r.measured && r.holders === 1 ? `<span class="hint">sole holder</span>`
+        : `<span class="unk">—</span>`}</td>` : ""}
+    <td class="num">${eds}</td>
+    <td class="num">${r.sales ? `${fmt(r.sales)} sold` : `<span class="hint">—</span>`}${
+      r.dispensers ? `<span class="hint"> · ${r.dispensers} disp</span>` : ""}</td>
+  </tr>`;
+}
+
+/* ---------------- collectors ---------------- */
 
 function renderCollectors() {
   const C = window.Collectors;

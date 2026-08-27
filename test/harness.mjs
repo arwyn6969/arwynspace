@@ -27,6 +27,7 @@ export const CLIENT_PATH = process.env.APP_JS
 
 /** Functions and values the tests are allowed to reach for. */
 const EXPOSE = [
+  "collectedRows", "collectedRow", "renderCollected", "pctOf", "pctPair", "concLabel",
   "state", "listingsFor", "isForSale", "orderAssetNames", "orderInvolves",
   "orderArtwork", "orderTouchesCollection", "readOrder", "readDispenser",
   "qty", "fmt", "fmtEff", "assetDivisible", "statusBreakdown", "statusKey",
@@ -49,6 +50,22 @@ function stubEl() {
   };
   return el;
 }
+
+/**
+ * The sibling plain scripts index.html loads BEFORE app.js. They publish
+ * window.Collectors / window.Collected, which app.js reads at render time, so a
+ * context without them is not the context the browser has. Loading them here keeps
+ * the harness faithful and lets the probe see reads that happen inside them.
+ */
+const SIBLINGS = [
+  path.join(ROOT, "public/collectors.js"),
+  // Overridable for the same reason CLIENT_PATH is: the Collected suite has to be
+  // pointed at a deliberately broken copy and required to fail, or its assertions
+  // about absent-versus-zero are untested claims.
+  process.env.COLLECTED_JS
+    ? path.resolve(process.env.COLLECTED_JS)
+    : path.join(ROOT, "public/collected.js"),
+];
 
 export function loadClient() {
   let src = fs.readFileSync(CLIENT_PATH, "utf8");
@@ -76,6 +93,10 @@ export function loadClient() {
   ctx.window = ctx;
   ctx.globalThis = ctx;
   vm.createContext(ctx);
+
+  for (const f of SIBLINGS) {
+    vm.runInContext(fs.readFileSync(f, "utf8"), ctx, { filename: path.basename(f) });
+  }
 
   // Collect whatever of EXPOSE actually exists, without throwing on the rest.
   src += `
