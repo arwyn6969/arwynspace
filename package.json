@@ -1,0 +1,14 @@
+{
+  "name": "arwyn-bitcoin-art",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Gallery for digital art issued on Bitcoin via Counterparty and Bitcoin Stamps",
+  "scripts": {
+    "index": "node scripts/index-assets.mjs",
+    "index:market": "node scripts/index-market.mjs",
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/serve.mjs"
+  },
+  "engines": { "node": ">=20" }
+}

@@ -1,0 +1,1344 @@
+/* ============================================================
+   Arwyn — digital art on Bitcoin
+   Zero-dependency client. Reads the pre-resolved artwork index and
+   layers live market/holder data on top when the API is reachable.
+   ============================================================ */
+
+const $  = (s, r = document) => r.querySelector(s);
+const view = $("#view");
+
+const state = {
+  data: null,
+  market: null,      // { dispensers, orders, btcPrice }
+  holders: null,     // { byAsset, leaderboard }
+  filter: "art",
+  query: "",
+  sort: "newest",          // newest | oldest | name | editions
+  collectorFilter: "all",  // all | stamps | xcp
+  megaSats: 111100,        // simulator input, in satoshis
+  mega: null,              // live mega dispenser state from /api/mega
+  stats: null,             // live headline figures from /api/stats
+  megaLoading: false,
+};
+
+/* Bitcoin block times are ~10 minutes, which is close enough to date a piece
+   without spending 450 API calls resolving exact block timestamps. Anchored on a
+   known height so the estimate doesn't drift. */
+const BLOCK_ANCHOR = { height: 951504, ms: Date.UTC(2026, 5, 20) };
+function blockDate(h) {
+  if (!h) return null;
+  return new Date(BLOCK_ANCHOR.ms - (BLOCK_ANCHOR.height - h) * 600000);
+}
+const blockYear = h => { const d = blockDate(h); return d ? d.getUTCFullYear() : null; };
+const fmtDate = h => {
+  const d = blockDate(h);
+  return d ? d.toLocaleDateString("en-GB", { month: "short", year: "numeric", timeZone: "UTC" }) : "—";
+};
+
+/** The asset's real name always leads; a curated title is secondary. */
+const nameOf = r => r.assetLongname || r.asset;
+const subtitleOf = r => {
+  const c = r.curatedName && r.curatedName !== nameOf(r) ? r.curatedName : null;
+  return c || null;
+};
+
+/* ---------------- helpers ---------------- */
+
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+const SATS = 1e8;
+const btc = sats => (sats / SATS).toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
+const btcAmt = b => Number(b).toFixed(8).replace(/0+$/, "").replace(/\.$/, "");
+const fmt = n => (n == null ? "—" : Number(n).toLocaleString("en-US"));
+
+/**
+ * Quantities reaching the client are ALREADY in human units — the indexer
+ * normalises every source before writing. This function therefore only formats;
+ * it must never scale. An earlier version divided by 1e8 here, which made every
+ * divisible asset read one hundred million times too small (PUDSEC's supply of
+ * 69,000,000 displayed as 0.69).
+ */
+function qty(units, divisible) {
+  if (units == null) return "—";
+  const n = Number(units);
+  if (!Number.isFinite(n)) return "—";
+  if (!divisible || Number.isInteger(n)) return n.toLocaleString("en-US");
+  return n.toLocaleString("en-US", { maximumFractionDigits: 8 });
+}
+
+/** Supply in human units, whichever field the record carries. */
+const supplyUnitsOf = r => Number(r.supplyUnits ?? r.supply ?? 0) || 0;
+
+/**
+ * Effective supply: how many separately ownable things exist. The smallest unit
+ * counts as one, exactly as a 1-of-1 counts as one, so a divisible asset has 1e8
+ * ownable units per whole unit. Equals the chain's own raw integer.
+ */
+const effSupply = r => (r.effectiveSupply != null ? r.effectiveSupply
+  : Math.round(supplyUnitsOf(r) * (r.divisible ? SATS : 1)));
+
+function fmtEff(n) {
+  if (n == null) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1e15) return (n / 1e15).toFixed(2).replace(/\.00$/, "") + "Q";
+  if (abs >= 1e12) return (n / 1e12).toFixed(2).replace(/\.00$/, "") + "T";
+  if (abs >= 1e9)  return (n / 1e9).toFixed(2).replace(/\.00$/, "")  + "B";
+  if (abs >= 1e6)  return (n / 1e6).toFixed(2).replace(/\.00$/, "")  + "M";
+  return Number(n).toLocaleString("en-US");
+}
+
+/** Never minted (zero supply, unlocked) has no claim to rarity; locked zero does. */
+const rankable = r => {
+  const u = supplyUnitsOf(r);
+  return u > 0 || !!r.locked;
+};
+
+const MEGA_ADDRESS = "1AwS3wRFNCoymKs69BXjAA4VfgWvuKvx4j";
+
+const shortAddr = a => (!a ? "—" : a.length <= 16 ? a : `${a.slice(0, 7)}…${a.slice(-5)}`);
+
+/** Grid uses the light rendition; detail uses the larger one. */
+const thumbOf   = r => r.media?.thumb || r.media?.image || null;
+const displayOf = r => r.media?.image || r.media?.thumb || null;
+
+const hasVideo = r => !!r.media?.animationUrl;
+const hasAudio = r => !!r.media?.audioUrl;
+const hasHtml  = r => !!r.media?.htmlUrl;
+
+/* ---------------- external links ---------------- */
+
+const LINKS = {
+  xcpio:      a => `https://www.xcp.io/asset/${encodeURIComponent(a)}`,
+  horizon:    a => `https://horizon.market/asset/${encodeURIComponent(a)}`,
+  pepewtf:    a => `https://pepe.wtf/asset/${encodeURIComponent(a)}`,
+  tokenscan:  a => `https://tokenscan.io/asset/${encodeURIComponent(a)}`,
+  stampchain: a => `https://stampchain.io/stamp/${encodeURIComponent(a)}`,
+  addr:       a => `https://www.xcp.io/address/${encodeURIComponent(a)}`,
+};
+
+/* ---------------- boot ---------------- */
+
+async function boot() {
+  // The single-file bundle inlines its data; the deployed site fetches it.
+  if (window.__ARTWORKS__) {
+    state.data = window.__ARTWORKS__;
+    if (window.__MARKET__)  state.market  = window.__MARKET__;
+    if (window.__HOLDERS__) state.holders = window.__HOLDERS__;
+  } else {
+    try {
+      const r = await fetch("./data/artworks.json", { cache: "no-cache" });
+      state.data = await r.json();
+    } catch {
+      view.innerHTML = `<div class="wrap"><div class="empty">Could not load the collection index.</div></div>`;
+      return;
+    }
+  }
+
+  const cfgName = state.data.artistName || "Arwyn";
+  $("#artist-name").textContent = cfgName;
+  document.title = `${cfgName} — Digital Art on Bitcoin`;
+
+  updateFootMeta();
+
+  window.addEventListener("hashchange", route);
+  route();
+
+  // Live data is additive: the site is fully usable if these never arrive.
+  loadStats();
+  loadMarket();
+  loadHolders();
+  loadLiveDispensers();
+}
+
+function updateFootMeta() {
+  const c = state.data?.counts || {};
+  const st = state.stats;
+  const el = $("#foot-meta");
+  if (!el) return;
+  el.innerHTML =
+    `Artwork index built ${esc(new Date(state.data.generatedAt).toISOString().slice(0, 16).replace("T", " "))} UTC` +
+    `<br>${c.artworks ?? 0} works indexed · ${c.tokenOpsExcluded ?? 0} token ops filtered` +
+    (st?.chainHeight ? `<br>Chain height ${fmt(st.chainHeight)} · live` : "");
+}
+
+/**
+ * Live headline figures. Counts baked at build time go stale the moment an asset
+ * is issued or moved, and this is a living collection — so anything cheap enough
+ * to fetch live, is.
+ */
+async function loadStats() {
+  try {
+    const r = await fetch("./api/stats", { cache: "no-cache" });
+    if (!r.ok) throw 0;
+    state.stats = await r.json();
+    updateFootMeta();
+    route();
+  } catch { /* the indexed snapshot remains the fallback */ }
+}
+
+/**
+ * Live mega dispenser state, refetched whenever the page is opened.
+ *
+ * This must not be cached in the bundle: prices and remaining stock change with
+ * every purchase, and a stale snapshot would promise tokens that are already gone.
+ */
+async function loadMega({ force = false } = {}) {
+  if (state.megaLoading) return;
+  if (state.mega && !force) return;
+  state.megaLoading = true;
+  if (force) route();
+  // Two independent live routes, then the snapshot. The serverless endpoint is
+  // preferred because it normalises units server-side, but stampchain sends
+  // Access-Control-Allow-Origin: * — so the browser can read chain state directly
+  // even on a purely static build with no backend at all.
+  try {
+    const r = await fetch("./api/mega", { cache: "no-cache" });
+    if (r.ok) {
+      const j = await r.json();
+      if (j?.dispensers?.length) { state.mega = j; return; }
+    }
+    throw 0;
+  } catch {
+    try {
+      state.mega = await fetchMegaDirect();
+    } catch {
+      // Both live routes failed. Fall back to the indexed snapshot and say so
+      // rather than presenting stale stock as current.
+      state.mega = null;
+    }
+  } finally {
+    state.megaLoading = false;
+    route();
+  }
+}
+
+/**
+ * Live dispenser state read straight from stampchain in the browser.
+ *
+ * Works with no backend because stampchain is CORS-open. Its quantities are RAW
+ * integers — the chain's smallest-unit counts — so divisible assets need dividing
+ * by 1e8 to reach human units. `asset_info.divisible` on each row tells us which.
+ */
+async function fetchMegaDirect() {
+  const url = `https://stampchain.io/api/v2/stamps/dispensers/${MEGA_ADDRESS}?limit=500`;
+  const r = await fetch(url, { cache: "no-cache" });
+  if (!r.ok) throw new Error("stampchain " + r.status);
+  const j = await r.json();
+
+  const dispensers = [];
+  for (const row of j?.data ?? []) {
+    if (row.close_block_index != null) continue;
+    const divisible = !!row.asset_info?.divisible;
+    const scale = divisible ? SATS : 1;
+    const remainingUnits = (Number(row.give_remaining) || 0) / scale;
+    const giveUnits = (Number(row.give_quantity) || 0) / scale;
+    if (remainingUnits <= 0 || giveUnits <= 0) continue;
+
+    dispensers.push({
+      asset: row.cpid,
+      assetLongname: row.asset_info?.asset_longname || null,
+      source: row.source || MEGA_ADDRESS,
+      priceSats: Number(row.satoshirate) || 0,
+      priceBtc: Number(row.btcrate) || (Number(row.satoshirate) || 0) / SATS,
+      giveUnits,
+      remainingUnits,
+      divisible,
+    });
+  }
+  dispensers.sort((a, b) => a.priceSats - b.priceSats);
+  if (!dispensers.length) throw new Error("no open dispensers");
+
+  return {
+    live: true,
+    via: "stampchain-direct",
+    fetchedAt: new Date().toISOString(),
+    address: MEGA_ADDRESS,
+    btcPrice: state.market?.btcPrice ?? null,
+    units: "human",
+    dispensers,
+  };
+}
+
+/**
+ * Live dispensers across every wallet, read directly from stampchain.
+ *
+ * Dispenser stock is the fastest-moving thing on the site, so it should never come
+ * from a build snapshot. Orders and the collector leaderboard stay indexed because
+ * they need a call per asset — hundreds of them — which is not something to do on
+ * page load. Each figure is labelled with which of the two it is.
+ */
+async function loadLiveDispensers() {
+  const addresses = state.data?.addresses || [];
+  if (!addresses.length) return;
+
+  const results = await Promise.all(addresses.map(async addr => {
+    try {
+      const r = await fetch(`https://stampchain.io/api/v2/stamps/dispensers/${addr}?limit=500`, { cache: "no-cache" });
+      if (!r.ok) return null;
+      return { addr, json: await r.json() };
+    } catch { return null; }
+  }));
+
+  const rows = [];
+  let reachable = 0;
+  for (const res of results) {
+    if (!res) continue;
+    reachable++;
+    for (const row of res.json?.data ?? []) {
+      if (row.close_block_index != null) continue;
+      const divisible = !!row.asset_info?.divisible;
+      const scale = divisible ? SATS : 1;
+      const remainingUnits = (Number(row.give_remaining) || 0) / scale;
+      const giveUnits = (Number(row.give_quantity) || 0) / scale;
+      if (remainingUnits <= 0 || giveUnits <= 0) continue;
+      rows.push({
+        asset: row.cpid,
+        assetLongname: row.asset_info?.asset_longname || null,
+        source: row.source || res.addr,
+        priceSats: Number(row.satoshirate) || 0,
+        priceBtc: Number(row.btcrate) || (Number(row.satoshirate) || 0) / SATS,
+        giveUnits, remainingUnits, divisible,
+        txHash: row.tx_hash,
+        origin: "stampchain-live",
+      });
+    }
+  }
+
+  // Only replace the snapshot if every wallet answered. A partial read would
+  // silently drop listings and make pieces look unavailable — the same failure
+  // mode that wrecked the holder data.
+  if (reachable === addresses.length && rows.length) {
+    state.market = { ...(state.market || {}), dispensers: rows, dispensersLive: true, dispensersFetchedAt: new Date().toISOString() };
+    route();
+  }
+}
+
+async function loadMarket() {
+  try {
+    const r = await fetch("./api/market", { cache: "no-cache" });
+    if (!r.ok) throw 0;
+    state.market = await r.json();
+  } catch {
+    try { const r2 = await fetch("./data/market.json", { cache: "no-cache" }); if (r2.ok) state.market = await r2.json(); } catch {}
+  }
+  if (state.market) route();
+}
+
+async function loadHolders() {
+  try {
+    const r = await fetch("./api/holders", { cache: "no-cache" });
+    if (!r.ok) throw 0;
+    state.holders = await r.json();
+  } catch {
+    try { const r2 = await fetch("./data/holders.json", { cache: "no-cache" }); if (r2.ok) state.holders = await r2.json(); } catch {}
+  }
+  if (state.holders) route();
+}
+
+/* ---------------- router ---------------- */
+
+function route() {
+  const h = location.hash.replace(/^#\/?/, "");
+  const [seg, arg] = h.split("/");
+  document.querySelectorAll(".nav a").forEach(a => a.classList.remove("on"));
+
+  if (seg === "art" && arg) return renderDetail(decodeURIComponent(arg));
+  if (seg === "collectors") { markNav("collectors"); return renderCollectors(); }
+  if (seg === "market")     { markNav("market");     return renderMarket(); }
+  if (seg === "mega")       { markNav("mega"); loadMega(); return renderMega(); }
+  if (seg === "about")      { markNav("about");      return renderAbout(); }
+  markNav("gallery");
+  renderGallery();
+}
+
+const markNav = r => { const a = document.querySelector(`.nav a[data-route="${r}"]`); if (a) a.classList.add("on"); };
+
+/* ---------------- listings lookup ---------------- */
+
+function listingsFor(asset) {
+  const m = state.market;
+  if (!m) return { dispensers: [], orders: [] };
+  return {
+    dispensers: (m.dispensers || []).filter(d => d.asset === asset),
+    orders: (m.orders || []).filter(o => o.give_asset === asset),
+  };
+}
+
+const isForSale = asset => {
+  const l = listingsFor(asset);
+  return l.dispensers.length > 0 || l.orders.length > 0;
+};
+
+/* ---------------- gallery ---------------- */
+
+function artworks() { return (state.data.artworks || []).filter(a => !a.excluded); }
+
+function filtered() {
+  let rows = artworks();
+  const f = state.filter;
+  // Default view is work that actually has artwork. 111 assets in this wallet
+  // were registered without any discoverable media — showing them as empty
+  // frames buries the real collection, so they live behind their own filter.
+  if (f === "art")     rows = rows.filter(r => r.hasMedia);
+  if (f === "nomedia") rows = rows.filter(r => !r.hasMedia);
+  if (f === "stamps")  rows = rows.filter(r => r.isStamp && r.hasMedia);
+  if (f === "xcp")     rows = rows.filter(r => !r.isStamp && r.hasMedia);
+  if (f === "forsale") rows = rows.filter(r => isForSale(r.asset));
+
+  const q = state.query.trim().toLowerCase();
+  if (q) rows = rows.filter(r =>
+    r.asset.toLowerCase().includes(q) ||
+    (r.assetLongname || "").toLowerCase().includes(q) ||
+    (r.title || "").toLowerCase().includes(q) ||
+    (r.text || "").toLowerCase().includes(q));
+
+  return sortRows(rows);
+}
+
+/** Ordering was previously media-then-type-then-alphabetical, which read as random. */
+function sortRows(rows) {
+  const byName = (a, b) => nameOf(a).localeCompare(nameOf(b));
+  const arr = [...rows];
+  switch (state.sort) {
+    case "oldest":   return arr.sort((a, b) => (a.firstBlock ?? 9e9) - (b.firstBlock ?? 9e9) || byName(a, b));
+    case "name":     return arr.sort(byName);
+    case "editions": return arr.sort((a, b) => {
+      // Rarest first, by separately ownable units. Never-minted pieces sit last
+      // regardless of direction, since they have no supply to compare.
+      const ra = rankable(a), rb = rankable(b);
+      if (ra !== rb) return ra ? -1 : 1;
+      return effSupply(a) - effSupply(b) || byName(a, b);
+    });
+    case "newest":
+    default:         return arr.sort((a, b) => (b.firstBlock ?? 0) - (a.firstBlock ?? 0) || byName(a, b));
+  }
+}
+
+const SORTS = [
+  ["newest", "Newest"], ["oldest", "Oldest"], ["name", "A–Z"], ["editions", "Rarest"],
+];
+
+function sortControl() {
+  return `<div class="sortbar" role="group" aria-label="Sort">
+    ${SORTS.map(([k, label]) =>
+      `<button class="sortbtn ${state.sort === k ? "on" : ""}" data-s="${k}">${esc(label)}</button>`).join("")}
+  </div>`;
+}
+
+function bindSort(rerender) {
+  view.querySelectorAll(".sortbtn").forEach(el =>
+    el.addEventListener("click", () => { state.sort = el.dataset.s; rerender(); }));
+}
+
+function renderGallery() {
+  const all = artworks();
+  const counts = {
+    art: all.filter(r => r.hasMedia).length,
+    all: all.length,
+    nomedia: all.filter(r => !r.hasMedia).length,
+    stamps: all.filter(r => r.isStamp && r.hasMedia).length,
+    xcp: all.filter(r => !r.isStamp && r.hasMedia).length,
+    forsale: all.filter(r => isForSale(r.asset)).length,
+  };
+  const rows = filtered();
+  const c = state.data.counts || {};
+  const st = state.stats?.complete ? state.stats : null;
+
+  view.innerHTML = `
+  <div class="wrap">
+    <section class="hero">
+      <h1>Art issued<br><span class="thin">on Bitcoin.</span></h1>
+      <p class="hero-sub">
+        Pixel art, paintings, animation and video issued as Counterparty tokens and Bitcoin Stamps —
+        each one an entry in Bitcoin's ledger rather than a file on a server. The collection grows and
+        moves, so the figures below say whether they came from the chain just now or from the last index.
+      </p>
+      <div class="stat-strip">
+        <div class="stat"><b>${counts.art}</b><span>Works with art</span></div>
+        <div class="stat"><b>${counts.stamps}</b><span>Bitcoin Stamps</span></div>
+        <div class="stat"><b>${counts.xcp}</b><span>Counterparty</span></div>
+        ${st ? `<div class="stat live"><b>${fmt(st.assetsOwned)}</b><span>Assets owned · live</span></div>` : ""}
+        <div class="stat ${st ? "live" : ""}"><b>${st ? fmt(st.openDispensers) : (counts.forsale || "—")}</b><span>Open dispensers${st ? " · live" : ""}</span></div>
+      </div>
+      <div class="freshrow">
+        ${freshness(false, state.data.generatedAt)}
+        <span class="freshnote">Artwork resolution is indexed — it costs thousands of API calls, so it
+        refreshes on a schedule rather than per visit. Dispensers, prices and the mega dispenser are live.</span>
+      </div>
+    </section>
+
+    <div class="toolbar">
+      <div class="chips">
+        ${chip("art", "Everything", counts.art)}
+        ${chip("stamps", "Bitcoin Stamps", counts.stamps)}
+        ${chip("xcp", "Counterparty", counts.xcp)}
+        ${chip("forsale", "For sale", counts.forsale)}
+        ${counts.nomedia ? chip("nomedia", "No art found", counts.nomedia) : ""}
+      </div>
+      ${sortControl()}
+      <label class="search">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" placeholder="Search the collection" value="${esc(state.query)}" aria-label="Search">
+      </label>
+    </div>
+
+    ${rows.length ? `<div class="grid">${rows.map(card).join("")}</div>`
+                  : `<div class="empty">Nothing matches that.</div>`}
+  </div>`;
+
+  view.querySelectorAll(".chip").forEach(el =>
+    el.addEventListener("click", () => { state.filter = el.dataset.f; renderGallery(); }));
+  bindSort(renderGallery);
+
+  const input = $(".search input", view);
+  input.addEventListener("input", e => {
+    state.query = e.target.value;
+    const g = $(".grid", view);
+    const rows2 = filtered();
+    if (g) g.innerHTML = rows2.map(card).join("") || "";
+    bindCards();
+  });
+
+  bindCards();
+}
+
+const chip = (f, label, n) =>
+  `<button class="chip ${state.filter === f ? "on" : ""}" data-f="${f}">${esc(label)}<span class="n">${n}</span></button>`;
+
+function card(r) {
+  const src = thumbOf(r);
+  const px = r.pixelate ? " pixel" : "";
+  const sale = isForSale(r.asset);
+
+  let visual;
+  if (hasVideo(r)) {
+    // Video gets a poster plus an explicit play affordance rather than relying on
+    // hover, which is invisible on touch and undiscoverable on desktop.
+    visual = (src
+        ? `<img class="${px.trim()}" src="${esc(src)}" alt="${esc(nameOf(r))}" loading="lazy" decoding="async">`
+        : `<div class="noart"><span>▶</span><span>Video</span></div>`)
+      + `<span class="playmark" aria-hidden="true">▶</span>`;
+  } else if (src) {
+    // Arweave gateways rate-limit and will occasionally 403 a thumbnail. Carry the
+    // remaining renditions on the element so a failed load steps down the chain
+    // instead of leaving an empty frame.
+    const chain = [...new Set([r.media?.image, r.media?.original].filter(u => u && u !== src))];
+    // Kaleidoscope's WebP renditions have animation stripped, so an animated piece
+    // must load its original GIF to move. That's deferred until the card scrolls
+    // into view, because these originals run to several megabytes each.
+    const anim = r.animated && r.animatedUrl && r.animatedUrl !== src ? r.animatedUrl : null;
+    visual = `<img class="${px.trim()}" src="${esc(src)}" alt="${esc(nameOf(r))}" loading="lazy" decoding="async"` +
+      (anim ? ` data-anim="${esc(anim)}"` : "") +
+      (chain.length ? ` data-fallback="${esc(chain.join("|"))}"` : "") + ` onerror="imgFallback(this)">`;
+  } else if (hasHtml(r)) {
+    visual = `<div class="noart"><span>◫</span><span>HTML stamp</span></div>`;
+  } else {
+    visual = `<div class="noart"><span>⌗</span><span>No image on chain</span></div>`;
+  }
+
+  const badges = [
+    r.isStamp ? `<span class="badge stamp">Stamp${r.stampNumber ? " #" + r.stampNumber : ""}</span>` : `<span class="badge xcp">XCP</span>`,
+    sale ? `<span class="badge forsale">For sale</span>` : "",
+  ].filter(Boolean).join("");
+
+  const dim = r.media?.originalDims || r.media?.dims;
+
+  return `
+  <article class="card" data-a="${esc(r.asset)}" tabindex="0">
+    <div class="frame">${visual}<div class="badges">${badges}</div></div>
+    <div class="meta">
+      <div class="t">${esc(nameOf(r))}</div>
+      ${subtitleOf(r) ? `<div class="t2">${esc(subtitleOf(r))}</div>` : ""}
+      <div class="s">
+        <span>${rankable(r)
+          ? `${qty(supplyUnitsOf(r), r.divisible)}${r.divisible ? " units" : " ed."}`
+          : "not minted"}</span>
+        ${r.firstBlock ? `<span class="dot">·</span><span>${esc(fmtDate(r.firstBlock))}</span>` : ""}
+        ${dim ? `<span class="dot">·</span><span>${dim.w}×${dim.h}</span>` : ""}
+      </div>
+    </div>
+  </article>`;
+}
+
+let animObserver = null;
+
+function bindCards() {
+  view.querySelectorAll(".card").forEach(el => {
+    const go = () => { location.hash = `#/art/${encodeURIComponent(el.dataset.a)}`; };
+    el.addEventListener("click", go);
+    el.addEventListener("keydown", e => { if (e.key === "Enter") go(); });
+  });
+
+  // Swap in animated originals as cards reach the viewport, so the page doesn't
+  // fetch dozens of multi-megabyte GIFs on load.
+  animObserver?.disconnect();
+  if ("IntersectionObserver" in window) {
+    animObserver = new IntersectionObserver(entries => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        const img = e.target;
+        const anim = img.dataset.anim;
+        if (anim) { img.src = anim; delete img.dataset.anim; }
+        animObserver.unobserve(img);
+      }
+    }, { rootMargin: "200px" });
+    view.querySelectorAll("img[data-anim]").forEach(img => animObserver.observe(img));
+  } else {
+    view.querySelectorAll("img[data-anim]").forEach(img => { img.src = img.dataset.anim; });
+  }
+}
+
+/**
+ * Step an <img> down its remaining renditions when a load fails, and if nothing
+ * is left, replace it with the same empty-frame treatment used when a piece has
+ * no art at all — so a gateway hiccup never shows a broken-image icon.
+ */
+window.imgFallback = function (el) {
+  const rest = (el.dataset.fallback || "").split("|").filter(Boolean);
+  const next = rest.shift();
+  if (next) {
+    el.dataset.fallback = rest.join("|");
+    el.src = next;
+    return;
+  }
+  el.onerror = null;
+  const frame = el.closest(".frame") || el.closest(".stage");
+  if (frame) frame.innerHTML = `<div class="noart"><span>\u2337</span><span>Image unavailable</span></div>` +
+    (frame.querySelector(".badges")?.outerHTML || "");
+};
+
+/* ---------------- detail ---------------- */
+
+function renderDetail(asset) {
+  const r = artworks().find(x => x.asset === asset);
+  if (!r) {
+    view.innerHTML = `<div class="wrap"><a class="back" href="#/">← Collection</a><div class="empty">Unknown piece.</div></div>`;
+    return;
+  }
+
+  const px = r.pixelate ? " pixel" : "";
+  const src = displayOf(r);
+
+  let stage;
+  if (hasHtml(r)) {
+    stage = `<iframe src="${esc(r.media.htmlUrl)}" sandbox="allow-scripts allow-same-origin" title="${esc(r.title || r.asset)}"></iframe>`;
+  } else if (hasVideo(r)) {
+    stage = `<video class="${px.trim()}" src="${esc(r.media.animationUrl)}" controls loop playsinline ${src ? `poster="${esc(src)}"` : ""}></video>`;
+  } else if (src) {
+    const chain = [...new Set([r.media?.original, r.media?.thumb].filter(u => u && u !== src))];
+    stage = `<img id="stage-img" class="${px.trim()}" src="${esc(src)}" alt="${esc(r.title || r.asset)}"` +
+      (chain.length ? ` data-fallback="${esc(chain.join("|"))}"` : "") + ` onerror="imgFallback(this)">`;
+  } else {
+    stage = `<div class="noart"><span>⌗</span><span>No image resolvable on chain</span></div>`;
+  }
+
+  const zoomTarget = r.media?.original || src;
+  const tools = [];
+  if (src) tools.push(`<button class="tool" id="zoom">Zoom</button>`);
+  if (r.media?.original) tools.push(`<a class="tool" href="${esc(r.media.original)}" target="_blank" rel="noopener noreferrer">Original${r.media.originalDims ? ` ${r.media.originalDims.w}×${r.media.originalDims.h}` : ""}</a>`);
+  if (r.media?.animationUrl && r.media.animationUrl !== r.media.original) tools.push(`<a class="tool" href="${esc(r.media.animationUrl)}" target="_blank" rel="noopener noreferrer">Video file</a>`);
+
+  const { dispensers, orders } = listingsFor(r.asset);
+  const holders = state.holders?.byAsset?.[r.asset] || null;
+
+  view.innerHTML = `
+  <div class="wrap">
+    <a class="back" href="#/">← Collection</a>
+    <div class="detail">
+      <div>
+        <div class="stage">
+          ${stage}
+          ${tools.length ? `<div class="stage-tools">${tools.join("")}</div>` : ""}
+        </div>
+        ${hasAudio(r) ? `<div class="audio-bar"><audio controls src="${esc(r.media.audioUrl)}"></audio></div>` : ""}
+        ${(r.note || r.warnings?.length) ? `<div class="section-h"><h3>Notes</h3><div class="rule"></div></div>
+          <div class="notice">${[r.note, ...(r.warnings || [])].filter(Boolean).map(w => esc(w)).join("<br>")}</div>` : ""}
+      </div>
+
+      <div>
+        <h2 class="piece">${esc(r.title || r.asset)}</h2>
+        <div class="piece-sub">${r.isStamp ? `Bitcoin Stamp${r.stampNumber ? " #" + r.stampNumber : ""}` : "Counterparty asset"}${r.assetLongname ? " · subasset" : ""}</div>
+        ${r.artist ? `<div class="byline">Art by ${esc(r.artist)}</div>` : ""}
+
+        ${r.descriptionHtml ? `<div class="prose-html">${sanitize(r.descriptionHtml)}</div>`
+          : r.text ? `<div class="prose">${esc(r.text)}</div>` : ""}
+
+        <dl class="facts">
+          ${fact("Name", `<a href="${LINKS.xcpio(r.assetLongname || r.asset)}" target="_blank" rel="noopener noreferrer">${esc(r.assetLongname || r.asset)}</a>`)}
+          ${r.assetLongname ? fact("Asset ID", esc(r.asset)) : ""}
+          ${fact(r.divisible ? "Supply" : "Editions", rankable(r)
+            ? qty(supplyUnitsOf(r), r.divisible)
+            : `<span class="no">not minted</span>`)}
+          ${fact("Divisible", r.divisible
+            ? `<span class="yes">yes</span> — splits into 100,000,000 per unit`
+            : `<span class="no">no</span>`)}
+          ${rankable(r) ? fact("Ownable units", `${fmtEff(effSupply(r))}${r.divisible
+            ? ` <span class="hint">(supply × 100,000,000)</span>` : ""}`) : ""}
+          ${fact("Supply locked", r.locked ? `<span class="yes">yes</span>` : `<span class="no">no</span>`)}
+          ${r.media?.imageMime ? fact("Format", esc(r.media.imageMime)) : ""}
+          ${(r.media?.originalDims || r.media?.dims) ? fact("Dimensions", (() => { const d = r.media.originalDims || r.media.dims; return `${d.w} × ${d.h}`; })()) : ""}
+          ${fact("Scaling", r.pixelate ? "nearest-neighbour (pixel art)" : "smooth")}
+          ${holders ? fact("Holders", fmt(holders.count)) : ""}
+          ${fact("Issuer", `<a href="${LINKS.addr(r.issuer)}" target="_blank" rel="noopener noreferrer">${esc(shortAddr(r.issuer))}</a>`)}
+          ${r.artist ? fact("Artist", esc(r.artist)) : ""}
+          ${r.tags?.length ? fact("Tags", r.tags.map(t => esc(t)).join(", ")) : ""}
+          ${r.durationSeconds ? fact("Duration", `${Math.round(r.durationSeconds)}s`) : ""}
+          ${r.ipfsCid ? fact("IPFS", `<a href="https://ipfs.io/ipfs/${esc(r.ipfsCid)}" target="_blank" rel="noopener noreferrer">${esc(r.ipfsCid.slice(0, 22))}…</a>`) : ""}
+          ${fact("Metadata", esc((r.sources || []).join(", ") || "—"))}
+        </dl>
+
+        ${signalsFor(r.asset).length ? `
+          <div class="section-h"><h3>Price signals</h3><div class="rule"></div></div>
+          ${signalBlock(r.asset)}` : ""}
+
+        ${dispensers.length || orders.length ? `
+          <div class="section-h"><h3>Available now</h3><div class="rule"></div></div>
+          ${dispensers.map(d => dispenserRow(d, r)).join("")}
+          ${orders.map(o => orderRow(o, r)).join("")}
+        ` : `
+          <div class="section-h"><h3>Availability</h3><div class="rule"></div></div>
+          <div class="notice plain">No open dispenser or exchange order for this piece right now.</div>
+        `}
+
+        <div class="links-row">
+          <a class="btn ghost" href="${LINKS.xcpio(r.asset)}" target="_blank" rel="noopener noreferrer">xcp.io</a>
+          <a class="btn ghost" href="${LINKS.horizon(r.asset)}" target="_blank" rel="noopener noreferrer">Horizon</a>
+          <a class="btn ghost" href="${LINKS.tokenscan(r.asset)}" target="_blank" rel="noopener noreferrer">Tokenscan</a>
+          ${r.isStamp ? `<a class="btn ghost" href="${LINKS.stampchain(r.asset)}" target="_blank" rel="noopener noreferrer">Stampchain</a>` : ""}
+          ${r.website ? `<a class="btn ghost" href="${esc(/^https?:/.test(r.website) ? r.website : "https://" + r.website)}" target="_blank" rel="noopener noreferrer">Artist link</a>` : ""}
+        </div>
+
+        ${holders?.top?.length ? `
+          <div class="section-h"><h3>Held by</h3><div class="rule"></div><span class="count">${fmt(holders.count)}</span></div>
+          <div class="table-scroll"><table class="table">
+            <thead><tr><th class="rank">#</th><th>Address</th><th class="num">Editions</th></tr></thead>
+            <tbody>${holders.top.map((h, i) => `
+              <tr><td class="rank ${i === 0 ? "top" : ""}">${i + 1}</td>
+                  <td><a class="addr" href="${LINKS.addr(h.address)}" target="_blank" rel="noopener noreferrer">${esc(shortAddr(h.address))}</a></td>
+                  <td class="num">${fmt(h.quantity)}</td></tr>`).join("")}
+            </tbody></table></div>` : ""}
+      </div>
+    </div>
+  </div>`;
+
+  const zoom = $("#zoom", view);
+  if (zoom) zoom.addEventListener("click", () => lightbox(zoomTarget, r.pixelate));
+  const si = $("#stage-img", view);
+  if (si) { si.style.cursor = "zoom-in"; si.addEventListener("click", () => lightbox(zoomTarget, r.pixelate)); }
+  window.scrollTo(0, 0);
+}
+
+const fact = (k, v) => `<div class="fact"><dt>${esc(k)}</dt><dd>${v}</dd></div>`;
+
+/** Allow only presentational tags from third-party metadata HTML. */
+function sanitize(html) {
+  return String(html)
+    .replace(/<\s*(script|style|iframe|object|embed|form|link|meta)[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
+    .replace(/<\s*(script|style|iframe|object|embed|form|link|meta)[^>]*\/?>/gi, "")
+    .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+    .replace(/(href|src)\s*=\s*(["'])\s*javascript:[^"']*\2/gi, '$1="#"');
+}
+
+function lightbox(src, pixel) {
+  if (!src) return;
+  const el = document.createElement("div");
+  el.className = "lb";
+  el.innerHTML = `<span class="close">esc / click to close</span><img class="${pixel ? "pixel" : ""}" src="${esc(src)}" alt="">`;
+  const kill = () => { el.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = e => { if (e.key === "Escape") kill(); };
+  el.addEventListener("click", kill);
+  document.addEventListener("keydown", onKey);
+  document.body.appendChild(el);
+}
+
+/* ---------------- market rows ---------------- */
+
+function dispenserRow(d, r) {
+  const price = Number(d.satoshirate || 0);
+  const usd = state.market?.btcPrice ? ` · $${((price / SATS) * state.market.btcPrice).toFixed(2)}` : "";
+  return `
+  <div class="buy-row">
+    <div class="left">
+      <div class="price">${btc(price)} BTC<small>Dispenser${usd ? esc(usd) : ""}</small></div>
+      <div class="qty">${qty(d.give_quantity, r.divisible)} per purchase · ${qty(d.give_remaining, r.divisible)} left</div>
+    </div>
+    <a class="btn" href="${LINKS.xcpio(r.asset)}" target="_blank" rel="noopener noreferrer">Buy →</a>
+  </div>`;
+}
+
+function orderRow(o, r) {
+  const getting = o.get_asset === "BTC" || o.get_asset === "XCP"
+    ? `${qty(o.get_remaining ?? o.get_quantity, o.get_asset === "BTC")} ${esc(o.get_asset)}`
+    : `${qty(o.get_remaining ?? o.get_quantity, false)} ${esc(o.get_asset)}`;
+  return `
+  <div class="buy-row">
+    <div class="left">
+      <div class="price">${getting}<small>DEX order</small></div>
+      <div class="qty">for ${qty(o.give_remaining ?? o.give_quantity, r.divisible)} ${esc(r.asset)}</div>
+    </div>
+    <a class="btn" href="${LINKS.horizon(r.asset)}" target="_blank" rel="noopener noreferrer">Trade →</a>
+  </div>`;
+}
+
+
+/* ---------------- price signals ---------------- */
+
+/**
+ * Signals are rendered as a LIST, not collapsed into one number. A dispenser
+ * price in BTC and a DEX ask denominated in PUDSEC aren't comparable, so
+ * flattening them would invent a fact. Each keeps its mechanism and denomination.
+ */
+const SIGNAL_LABEL = {
+  floor: "Floor", bid: "Best bid", lastSale: "Last sale", market24: "24h last",
+};
+
+function signalsFor(asset) {
+  return state.market?.signalsByAsset?.[asset] || [];
+}
+
+function priceAmount(sig) {
+  if (sig.asset === "BTC") {
+    const usd = state.market?.btcPrice ? ` · $${(sig.amount * state.market.btcPrice).toFixed(2)}` : "";
+    return `${btcAmt(sig.amount)} BTC${usd}`;
+  }
+  return `${fmt(Number(sig.amount.toPrecision(6)))} ${esc(sig.asset)}`;
+}
+
+function signalBlock(asset) {
+  const sigs = signalsFor(asset);
+  if (!sigs.length) return "";
+  const order = { floor: 0, lastSale: 1, bid: 2, market24: 3 };
+  const rows = [...sigs].sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9));
+  return `
+  <div class="signals">
+    ${rows.map(sig => `
+      <div class="sig s-${esc(sig.kind)}">
+        <div class="sig-k">${esc(SIGNAL_LABEL[sig.kind] || sig.kind)}</div>
+        <div class="sig-v">${priceAmount(sig)}</div>
+        <div class="sig-m">${esc(sig.mechanism === "dex" ? "exchange" : sig.mechanism)}${sig.note ? " · " + esc(sig.note) : ""}</div>
+      </div>`).join("")}
+  </div>`;
+}
+
+/* ---------------- collectors ---------------- */
+
+const COLLECTORS_SHOWN = 150;
+
+function artworkMap() {
+  return new Map(artworks().filter(a => a.hasMedia).map(a => [a.asset, a]));
+}
+
+function renderCollectors() {
+  const C = window.Collectors;
+  const lbAll = state.holders?.leaderboard;
+  const map = artworkMap();
+  const totalCollectible = map.size;
+
+  if (!state.holders) {
+    view.innerHTML = `<div class="wrap"><section class="hero"><h1>Collectors</h1></section>
+      <div class="loading"><span class="spinner"></span>Reading holder balances…</div></div>`;
+    return;
+  }
+
+  const summary = C.collectorSummary(lbAll, map, totalCollectible);
+  let stats = lbAll.map(c => C.collectorStats(c, map, totalCollectible));
+
+  if (state.collectorFilter === "stamps") stats = stats.filter(s => s.stamps > 0);
+  if (state.collectorFilter === "xcp")    stats = stats.filter(s => s.xcp > 0);
+
+  const q = state.query.trim().toLowerCase();
+  if (q) stats = stats.filter(s => s.address.toLowerCase().includes(q));
+
+  stats = sortCollectors(stats);
+  const shown = stats.slice(0, COLLECTORS_SHOWN);
+
+  view.innerHTML = `
+  <div class="wrap">
+    <section class="hero" style="padding-bottom:1.25rem">
+      <h1>Collectors</h1>
+      <p class="hero-sub">${fmt(summary.collectors)} addresses hold at least one piece. Rank is by how
+      many <strong>distinct pieces</strong> someone holds, never by quantity — otherwise a single
+      large-supply token would buy the top spot.</p>
+      <div class="stat-strip">
+        <div class="stat"><b>${fmt(summary.collectors)}</b><span>Collectors</span></div>
+        <div class="stat"><b>${summary.deepest?.pieces ?? "—"}</b><span>Deepest holding</span></div>
+        <div class="stat"><b>${summary.deepestSharePct.toFixed(0)}%</b><span>Of the collection</span></div>
+        <div class="stat"><b>${fmt(summary.mixed)}</b><span>Hold both kinds</span></div>
+      </div>
+    </section>
+
+    <div class="section-h"><h3>Ranks</h3><div class="rule"></div></div>
+    <p class="explainer">Ranks are named after the mechanisms these works are actually built on,
+    from a single data push up to stamp data that cannot be pruned from Bitcoin.</p>
+    <div class="tiers">
+      ${C.tierLadder().map(t => `
+        <div class="tier t-${t.key}">
+          <div class="tier-n">${fmt(summary.tierCounts[t.key] || 0)}</div>
+          <div class="tier-name">${esc(t.name)}</div>
+          <div class="tier-req">${t.min}${t.min >= 50 ? "+" : "+"} pieces</div>
+          <div class="tier-blurb">${esc(t.blurb)}</div>
+        </div>`).join("")}
+    </div>
+
+    <div class="toolbar" style="margin-top:2.5rem">
+      <div class="chips">
+        ${cchip("all", "Everyone", lbAll.length)}
+        ${cchip("stamps", "Hold stamps", lbAll.filter(c => (c.assets||[]).some(a => map.get(a)?.isStamp)).length)}
+        ${cchip("xcp", "Hold Counterparty", lbAll.filter(c => (c.assets||[]).some(a => map.get(a) && !map.get(a).isStamp)).length)}
+      </div>
+      ${collectorSortControl()}
+      <label class="search">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+        <input type="search" placeholder="Search address" value="${esc(state.query)}" aria-label="Search collectors">
+      </label>
+    </div>
+
+    ${shown.length ? `<div class="collectors">${shown.map((s, i) => collectorRow(s, i)).join("")}</div>`
+      : `<div class="empty">No collectors match that.</div>`}
+    ${stats.length > COLLECTORS_SHOWN
+      ? `<p class="foot-note" style="padding:1.5rem 0 4rem">Showing the top ${COLLECTORS_SHOWN} of ${fmt(stats.length)}.</p>`
+      : `<div style="height:4rem"></div>`}
+  </div>`;
+
+  view.querySelectorAll(".chip").forEach(el =>
+    el.addEventListener("click", () => { state.collectorFilter = el.dataset.f; renderCollectors(); }));
+  bindSort(renderCollectors);
+  const input = $(".search input", view);
+  if (input) input.addEventListener("input", e => { state.query = e.target.value; renderCollectors(); });
+  view.querySelectorAll(".crow").forEach(el =>
+    el.addEventListener("click", e => {
+      if (e.target.closest("a")) return;
+      el.classList.toggle("open");
+    }));
+}
+
+const cchip = (f, label, n) =>
+  `<button class="chip ${state.collectorFilter === f ? "on" : ""}" data-f="${f}">${esc(label)}<span class="n">${n}</span></button>`;
+
+const CSORTS = [["newest", "Most pieces"], ["editions", "Rarest holding"], ["oldest", "Earliest piece"], ["name", "Address"]];
+
+function collectorSortControl() {
+  return `<div class="sortbar" role="group" aria-label="Sort collectors">
+    ${CSORTS.map(([k, label]) =>
+      `<button class="sortbtn ${state.sort === k ? "on" : ""}" data-s="${k}">${esc(label)}</button>`).join("")}
+  </div>`;
+}
+
+function sortCollectors(stats) {
+  const arr = [...stats];
+  switch (state.sort) {
+    // Sorting on total units was noise: it was dominated by a handful of
+    // billion-supply indivisible tokens, so the "most editions" leader was really
+    // just whoever held the most of one common asset. Ranking by the scarcest piece
+    // someone holds is a question worth asking.
+    case "editions": return arr.sort((a, b) => {
+      const ra = a.rarest ? effSupply(a.rarest) : Infinity;
+      const rb = b.rarest ? effSupply(b.rarest) : Infinity;
+      return ra - rb || b.pieces - a.pieces;
+    });
+    case "oldest":   return arr.sort((a, b) => (a.earliest?.firstBlock ?? 9e9) - (b.earliest?.firstBlock ?? 9e9));
+    case "name":     return arr.sort((a, b) => a.address.localeCompare(b.address));
+    default:         return arr.sort((a, b) => b.pieces - a.pieces || b.editions - a.editions);
+  }
+}
+
+function collectorRow(s, i) {
+  const pics = s.held.filter(r => thumbOf(r)).slice(0, 8);
+  const extra = s.held.length - pics.length;
+  return `
+  <article class="crow" tabindex="0">
+    <div class="crank ${i < 3 ? "top" : ""}">${i + 1}</div>
+
+    <div class="cmain">
+      <div class="cline">
+        <a class="addr" href="${LINKS.addr(s.address)}" target="_blank" rel="noopener noreferrer">${esc(shortAddr(s.address))}</a>
+        <span class="tierbadge t-${s.tier.key}">${esc(s.tier.name)}</span>
+      </div>
+      <div class="cstats">
+        <span><b>${fmt(s.pieces)}</b> pieces</span>
+        <span class="dot">·</span><span><b>${s.sharePct.toFixed(1)}%</b> of the collection</span>
+        ${s.stamps ? `<span class="dot">·</span><span>${fmt(s.stamps)} stamps</span>` : ""}
+        ${s.xcp ? `<span class="dot">·</span><span>${fmt(s.xcp)} Counterparty</span>` : ""}
+        ${s.animated ? `<span class="dot">·</span><span>${fmt(s.animated)} moving</span>` : ""}
+      </div>
+      <div class="cstats sub">
+        ${s.rarest ? `<span>Rarest held: <a href="#/art/${encodeURIComponent(s.rarest.asset)}">${esc(nameOf(s.rarest))}</a>
+          (${fmtEff(effSupply(s.rarest))} ownable${s.rarest.divisible ? ", divisible" : ""})</span>` : ""}
+        ${s.earliest ? `<span class="dot">·</span><span>Collecting since ${esc(fmtDate(s.earliest.firstBlock))}</span>` : ""}
+      </div>
+    </div>
+
+    <div class="cthumbs">
+      ${pics.map(r => `<a href="#/art/${encodeURIComponent(r.asset)}" title="${esc(nameOf(r))}"><img src="${esc(thumbOf(r))}" alt="" loading="lazy" class="${r.pixelate ? "pixel" : ""}"></a>`).join("")}
+      ${extra > 0 ? `<span class="more">+${extra}</span>` : ""}
+    </div>
+  </article>`;
+}
+
+function renderMarket() {
+  const m = state.market;
+  const map = new Map(artworks().map(a => [a.asset, a]));
+  const disp = sortListings((m?.dispensers || []).filter(d => map.has(d.asset)), map);
+  const openOrders = (m?.orders || []).filter(o => map.has(o.asset ?? o.giveAsset ?? o.give_asset));
+  const history = (m?.orderHistory || []).filter(o => map.has(o.give_asset));
+  const filled = history.filter(o => o.status === "filled");
+
+  view.innerHTML = `
+  <div class="wrap">
+    <section class="hero" style="padding-bottom:1.25rem">
+      <h1>Market</h1>
+      <p class="hero-sub">Two separate mechanisms operate on Counterparty, and this page keeps them
+      apart because they behave very differently. Buying always happens in your own wallet — this
+      site never holds funds or asks for keys.</p>
+      ${m?.btcPrice ? `<div class="stat-strip">
+        <div class="stat"><b>${disp.length}</b><span>Open dispensers</span></div>
+        <div class="stat"><b>${openOrders.length}</b><span>Open DEX orders</span></div>
+        <div class="stat"><b>${filled.length}</b><span>Filled historically</span></div>
+        <div class="stat"><b>${Object.keys(m.signalsByAsset || {}).length}</b><span>With price data</span></div>
+        <div class="stat"><b>$${fmt(Math.round(m.btcPrice))}</b><span>BTC</span></div>
+      </div>` : ""}
+    </section>
+
+    ${!m ? `<div class="loading"><span class="spinner"></span>Reading the market…</div>` : `
+      <div class="section-h"><h3>Dispensers</h3><div class="rule"></div>
+        ${freshness(!!m.dispensersLive, m.dispensersFetchedAt ?? m.generatedAt)}${sortControl()}</div>
+      <p class="explainer">A dispenser is a vending machine written into the chain. You send the exact
+      amount of BTC to the dispenser address and it releases the piece automatically. Fixed price,
+      no negotiation, no counterparty risk.</p>
+      ${disp.length ? `<div class="listings">${disp.map(d => dispenserCard(d, map.get(d.asset), m)).join("")}</div>`
+                    : `<div class="notice plain">No open dispensers right now.</div>`}
+
+      <div class="section-h"><h3>Exchange orders</h3><div class="rule"></div><span class="count">${openOrders.length} open</span></div>
+      <p class="explainer">The DEX is an order book: an offer to trade one asset for another at a
+      chosen rate, which sits until matched or expired. Orders can be priced in any asset, not just
+      BTC. Unlike dispensers these are indexed rather than live, because checking them means one
+      request per asset across hundreds of assets.</p>
+      ${openOrders.length
+        ? `<div class="listings">${openOrders.map(o => orderCard(o, map.get(o.asset ?? o.giveAsset ?? o.give_asset))).join("")}</div>`
+        : `<div class="notice">No exchange orders are open at the moment.${history.length
+            ? ` There are <strong>${history.length}</strong> in this wallet's history — ${
+              ["filled", "expired", "cancelled"].map(st => {
+                const n = history.filter(o => o.status === st).length;
+                return n ? `${n} ${st}` : null;
+              }).filter(Boolean).join(", ")} — listed below.` : ""}</div>`}
+
+      ${filled.length ? `
+        <div class="section-h"><h3>Sold via the exchange</h3><div class="rule"></div><span class="count">${filled.length}</span></div>
+        <p class="explainer">These trades completed, so they are prices somebody actually paid rather
+        than an estimate.</p>
+        <div class="listings">${filled.slice(0, 40).map(o => orderCard(o, map.get(o.give_asset), true)).join("")}</div>
+      ` : ""}
+      <div style="height:4rem"></div>
+    `}
+  </div>`;
+
+  bindSort(renderMarket);
+  bindListingThumbs();
+}
+
+function sortListings(rows, map) {
+  const key = a => map.get(a.asset);
+  const arr = [...rows];
+  switch (state.sort) {
+    case "oldest":   return arr.sort((a, b) => (key(a)?.firstBlock ?? 9e9) - (key(b)?.firstBlock ?? 9e9));
+    case "name":     return arr.sort((a, b) => nameOf(key(a) || {}).localeCompare(nameOf(key(b) || {})));
+    case "editions": return arr.sort((a, b) => Number(key(a)?.supply || 0) - Number(key(b)?.supply || 0));
+    default:         return arr.sort((a, b) => (key(b)?.firstBlock ?? 0) - (key(a)?.firstBlock ?? 0));
+  }
+}
+
+/** Listing rows lead with the asset name, which is the thing being bought. */
+function listingThumb(r) {
+  const src = r && thumbOf(r);
+  if (!src) return `<div class="lthumb empty">⌗</div>`;
+  return `<div class="lthumb"><img src="${esc(src)}" alt="" loading="lazy"
+    class="${r.pixelate ? "pixel" : ""}"></div>`;
+}
+
+function dispenserCard(d, r, m) {
+  // Quantities and prices here are already human units, normalised at ingest.
+  const priceBtc = d.priceBtc != null ? Number(d.priceBtc) : Number(d.satoshirate || 0) / SATS;
+  const usd = m?.btcPrice ? `$${(priceBtc * m.btcPrice).toFixed(2)}` : null;
+  return `
+  <article class="listing" data-a="${esc(d.asset)}">
+    ${listingThumb(r)}
+    <div class="lbody">
+      <div class="lname">${esc(nameOf(r || { asset: d.asset }))}</div>
+      <div class="lmeta">
+        <span>${qty(d.giveUnits ?? d.give_quantity, r?.divisible)} per purchase</span>
+        <span class="dot">·</span><span>${qty(d.remainingUnits ?? d.give_remaining, r?.divisible)} remaining</span>
+        ${r?.divisible ? `<span class="dot">·</span><span>divisible</span>` : ""}
+        ${r?.isStamp ? `<span class="dot">·</span><span>Bitcoin Stamp</span>` : ""}
+      </div>
+    </div>
+    <div class="lprice">
+      <b>${btcAmt(priceBtc)} BTC</b>
+      ${usd ? `<small>${esc(usd)}</small>` : ""}
+    </div>
+    <a class="btn" href="${LINKS.xcpio(r?.assetLongname || d.asset)}" target="_blank" rel="noopener noreferrer">Buy →</a>
+  </article>`;
+}
+
+function orderCard(o, r, isHistory = false) {
+  // Orders may be denominated in ANY asset, so the paired asset is always shown.
+  const giveU = o.giveRemaining ?? o.giveUnits ?? o.give_remaining ?? o.give_quantity;
+  const getU  = o.getRemaining  ?? o.getUnits  ?? o.get_remaining  ?? o.get_quantity;
+  const getAsset = o.getAsset ?? o.get_asset;
+  const giving = qty(giveU, r?.divisible);
+  const asking = `${qty(getU, false)} ${esc(getAsset)}`;
+  return `
+  <article class="listing ${isHistory ? "past" : ""}" data-a="${esc(o.giveAsset ?? o.give_asset)}">
+    ${listingThumb(r)}
+    <div class="lbody">
+      <div class="lname">${esc(nameOf(r || { asset: o.give_asset }))}</div>
+      <div class="lmeta">
+        <span>${giving} offered</span>
+        ${o.status && o.status !== "open" ? `<span class="dot">·</span><span class="st-${esc(o.status)}">${esc(o.status)}</span>` : ""}
+        ${o.block_index ? `<span class="dot">·</span><span>${esc(fmtDate(o.block_index))}</span>` : ""}
+      </div>
+    </div>
+    <div class="lprice"><b>${asking}</b><small>${isHistory ? "traded for" : "asking"}</small></div>
+    ${isHistory ? "" : `<a class="btn" href="${LINKS.horizon(r?.assetLongname || o.giveAsset || o.give_asset)}" target="_blank" rel="noopener noreferrer">Trade →</a>`}
+  </article>`;
+}
+
+function bindListingThumbs() {
+  view.querySelectorAll(".listing[data-a]").forEach(el => {
+    el.addEventListener("click", e => {
+      if (e.target.closest("a")) return;
+      location.hash = `#/art/${encodeURIComponent(el.dataset.a)}`;
+    });
+  });
+}
+
+/* ---------------- mega dispenser ---------------- */
+
+/**
+ * Dispenser state, live where possible.
+ *
+ * The live endpoint is authoritative because stock changes with every purchase.
+ * The indexed snapshot is only a fallback for the static preview build, and the
+ * page states which one it is rather than presenting stale data as current.
+ */
+function megaDispensers() {
+  const map = new Map(artworks().map(a => [a.asset, a]));
+  const live = state.mega?.dispensers;
+  const rows = live && live.length
+    ? live
+    : (state.market?.dispensers || []).filter(d => d.source === MEGA_ADDRESS);
+
+  return rows
+    .map(d => ({
+      ...d,
+      // Live rows carry their own divisibility; snapshot rows borrow it from the index.
+      divisible: d.divisible ?? map.get(d.asset)?.divisible ?? false,
+      art: map.get(d.asset) || null,
+    }))
+    .sort((a, b) => a.priceSats - b.priceSats);
+}
+
+const megaIsLive = () => !!(state.mega?.dispensers?.length);
+
+/** A small, consistent badge so every figure declares its own freshness. */
+function freshness(isLive, at) {
+  const when = at ? new Date(at) : null;
+  const stamp = when ? when.toISOString().slice(11, 16) + " UTC" : null;
+  return isLive
+    ? `<span class="fresh live" title="Fetched from the chain just now">Live${stamp ? ` · ${esc(stamp)}` : ""}</span>`
+    : `<span class="fresh stale" title="From the last index build, not live">Indexed${stamp ? ` · ${esc(stamp)}` : ""}</span>`;
+}
+
+function renderMega() {
+  const M = window.MegaDispenser;
+  const disp = megaDispensers();
+
+  if (!state.market && !state.mega) {
+    view.innerHTML = `<div class="wrap"><section class="hero"><h1>The mega dispenser</h1></section>
+      <div class="loading"><span class="spinner"></span>Reading live dispenser state…</div></div>`;
+    return;
+  }
+  if (!disp.length) {
+    view.innerHTML = `<div class="wrap"><section class="hero"><h1>The mega dispenser</h1></section>
+      <div class="empty">No open dispensers on this address right now.</div></div>`;
+    return;
+  }
+
+  const sim = M.simulateMega(disp, state.megaSats);
+  const tiers = M.megaTiers(disp);
+  const btcPrice = state.market?.btcPrice;
+  const usd = btcPrice ? `$${(sim.paymentBtc * btcPrice).toFixed(2)}` : null;
+
+  const presets = tiers.map(t => t.sats);
+
+  view.innerHTML = `
+  <div class="wrap">
+    <section class="hero" style="padding-bottom:1.5rem">
+      <h1>One payment.<br><span class="thin">Many pieces.</span></h1>
+      <p class="hero-sub">${disp.length} dispensers share a single Bitcoin address. A payment triggers
+      <strong>every one of them it can afford</strong> — and takes as many lots from each as it covers.
+      Move the amount to see exactly what would arrive.</p>
+      <div class="freshrow">
+        ${freshness(megaIsLive(), state.mega?.fetchedAt ?? state.market?.generatedAt)}
+        <button class="tool" id="mega-refresh" ${state.megaLoading ? "disabled" : ""}>
+          ${state.megaLoading ? "Refreshing…" : "Refresh"}
+        </button>
+        ${!megaIsLive() ? `<span class="freshnote">Live endpoint unreachable — showing the last indexed snapshot.</span>` : ""}
+      </div>
+    </section>
+
+    <div class="megacalc">
+      <div class="megainput">
+        <label class="megalabel" for="mega-btc">You send</label>
+        <div class="megafield">
+          <input id="mega-btc" type="text" inputmode="decimal" value="${(state.megaSats / 1e8).toFixed(8)}" aria-label="BTC amount">
+          <span class="megaunit">BTC</span>
+        </div>
+        ${usd ? `<div class="megausd">${esc(usd)}</div>` : ""}
+        <input id="mega-range" type="range" min="0" max="${presets.length - 1}" step="1"
+          value="${Math.max(0, presets.findIndex(p => p >= state.megaSats))}" aria-label="Amount tier">
+        <div class="megapresets">
+          ${presets.map(p => `<button class="megapreset ${p === state.megaSats ? "on" : ""}" data-s="${p}">${(p / 1e8).toFixed(8).replace(/0+$/, "").replace(/\.$/, "")}</button>`).join("")}
+        </div>
+      </div>
+
+      <div class="megaresult">
+        <div class="megabig"><b>${sim.assets}</b><span>of ${disp.length} dispensers trigger</span></div>
+        ${sim.anyCapped ? `<div class="megaflag">Some dispensers have less stock than this payment asks for. You receive what remains.</div>` : ""}
+      </div>
+    </div>
+
+    <div class="notice" style="margin-bottom:2rem">
+      <strong>Before you send anything.</strong> Counterparty does not refund overpayment. If a
+      dispenser has less stock than your payment asks for, you receive only what is left and the
+      remainder of that portion is not returned. Stock and prices change as people buy, so treat this
+      as a projection${megaIsLive() ? " from state fetched moments ago" : ` from the indexed snapshot of ${esc(new Date(state.market.generatedAt).toISOString().slice(0, 16).replace("T", " "))} UTC`},
+      not a promise. The chain decides what actually happens.
+    </div>
+
+    <div class="section-h"><h3>What arrives</h3><div class="rule"></div><span class="count">${sim.assets} assets</span></div>
+    ${sim.hits.length ? `<div class="megahaul">${sim.hits.map(h => megaCard(h, M)).join("")}</div>`
+      : `<div class="notice plain">This amount is below every dispenser's price. The cheapest is
+         ${(disp[0].priceSats / 1e8).toFixed(8)} BTC.</div>`}
+
+    ${sim.results.filter(r => !r.triggered).length ? `
+      <div class="section-h"><h3>Not reached at this amount</h3><div class="rule"></div></div>
+      <div class="megamissed">
+        ${sim.results.filter(r => !r.triggered).map(r => `
+          <button class="missed" data-s="${r.priceSats}">
+            <span class="mname">${esc(nameOf(r.art || { asset: r.asset }))}</span>
+            <span class="mprice">${(r.priceSats / 1e8).toFixed(8)} BTC${r.empty ? " · out of stock" : ""}</span>
+          </button>`).join("")}
+      </div>` : ""}
+
+    <div class="section-h"><h3>Every threshold</h3><div class="rule"></div></div>
+    <p class="explainer">Each price point is a dispenser. Paying at least that much triggers it, and
+    paying a multiple of it takes multiple lots — stock permitting.</p>
+    <div class="table-scroll" style="padding-bottom:1.5rem">
+      <table class="table">
+        <thead><tr><th>Send at least</th><th class="num">Dispensers triggered</th><th>Unlocks</th></tr></thead>
+        <tbody>${tiers.map(t => `
+          <tr class="tierrow ${t.sats === state.megaSats ? "on" : ""}" data-s="${t.sats}">
+            <td><b>${(t.sats / 1e8).toFixed(8)}</b> BTC</td>
+            <td class="num">${t.assets}</td>
+            <td>${t.unlocks.map(u => esc(nameOf(u.art || { asset: u.asset }))).join(", ")}</td>
+          </tr>`).join("")}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-h"><h3>The address</h3><div class="rule"></div></div>
+    <p class="explainer">Payment goes to this address from your own wallet. This site never handles
+    funds, never asks for a key, and cannot send anything on your behalf.</p>
+    <div class="megaaddr">
+      <code id="mega-addr">${esc(MEGA_ADDRESS)}</code>
+      <button class="btn ghost" id="mega-copy">Copy</button>
+      <a class="btn ghost" href="${LINKS.addr(MEGA_ADDRESS)}" target="_blank" rel="noopener noreferrer">View on xcp.io</a>
+    </div>
+    <div style="height:4rem"></div>
+  </div>`;
+
+  const apply = sats => { state.megaSats = Math.max(0, Math.round(sats)); renderMega(); };
+
+  const input = $("#mega-btc", view);
+  input.addEventListener("change", () => apply((parseFloat(input.value) || 0) * 1e8));
+  input.addEventListener("keydown", e => { if (e.key === "Enter") apply((parseFloat(input.value) || 0) * 1e8); });
+
+  const range = $("#mega-range", view);
+  range.addEventListener("input", () => apply(presets[Number(range.value)]));
+
+  view.querySelectorAll(".megapreset, .missed, .tierrow").forEach(el =>
+    el.addEventListener("click", () => apply(Number(el.dataset.s))));
+
+  const refresh = $("#mega-refresh", view);
+  if (refresh) refresh.addEventListener("click", () => loadMega({ force: true }));
+
+  const copy = $("#mega-copy", view);
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(MEGA_ADDRESS); copy.textContent = "Copied"; setTimeout(() => copy.textContent = "Copy", 1600); }
+    catch { copy.textContent = "Select it manually"; }
+  });
+
+  window.scrollTo(0, 0);
+}
+
+function megaCard(h, M) {
+  const r = h.art;
+  const q = M.megaQty(h.received, h.divisible);
+  const src = r && thumbOf(r);
+  return `
+  <article class="megaitem" ${r ? `data-a="${esc(h.asset)}"` : ""}>
+    <div class="lthumb">${src
+      ? `<img src="${esc(src)}" alt="" loading="lazy" class="${r.pixelate ? "pixel" : ""}">`
+      : `<span style="color:var(--muted-2)">⌗</span>`}</div>
+    <div class="megabody">
+      <div class="lname">${esc(nameOf(r || { asset: h.asset }))}</div>
+      <div class="megaqty">
+        <b>${esc(q.text)}</b>${q.suffix ? ` <span class="atomic">${esc(q.suffix)}</span>` : ""}
+        <span class="lots">${h.lots} lot${h.lots > 1 ? "s" : ""} @ ${(h.priceSats / 1e8).toFixed(8)}</span>
+      </div>
+      ${h.stockCapped ? `<div class="capped">Stock limited — this payment covers ${fmt(h.lotsWanted)} lots, ${fmt(h.lotsAvailable)} remain</div>` : ""}
+    </div>
+  </article>`;
+}
+
+/* ---------------- about ---------------- */
+
+function renderAbout() {
+  const c = state.data.counts || {};
+  const addrs = state.data.addresses || [];
+  view.innerHTML = `
+  <div class="wrap"><div class="about">
+    <h1>About this collection</h1>
+    <p>Every piece here lives on Bitcoin. Some are <strong>Counterparty assets</strong>, where the
+    artwork is referenced by an on-chain asset whose description points at the image. Others are
+    <strong>Bitcoin Stamps</strong>, where the image data itself is embedded in the transaction and
+    cannot be detached from the chain.</p>
+
+    <p>This site reads directly from the Counterparty and Bitcoin Stamps indexers. It hosts no
+    artwork of its own — if this page disappeared tomorrow, every piece would still be exactly
+    where it is.</p>
+
+    <h4>Wallets indexed</h4>
+    <ul>${addrs.map(a => `<li><code>${esc(a)}</code></li>`).join("")}</ul>
+
+    <h4>What's in here</h4>
+    <ul>
+      <li>${c.artworks ?? 0} works, of which ${c.withMedia ?? 0} have artwork resolved</li>
+      <li>${c.stamps ?? 0} Bitcoin Stamps and ${c.counterparty ?? 0} Counterparty assets</li>
+      <li>${c.tokenOpsExcluded ?? 0} SRC-20 token operations filtered out — these are issued from the
+      same wallet but are token transactions, not artwork</li>
+    </ul>
+
+    <h4>On scaling</h4>
+    <p>Pixel art is scaled with nearest-neighbour so it stays crisp, while high-resolution work is
+    scaled smoothly. That choice is made per piece from the artwork's real measured dimensions rather
+    than from its type, so a small stamp stays sharp and a large painting never gets crunched.</p>
+
+    <h4>Buying</h4>
+    <p>Where a piece has an open dispenser or exchange order, the market pages link out to a
+    marketplace where the purchase happens in your own wallet. This site never asks for keys and
+    never holds funds.</p>
+  </div></div>`;
+}
+
+boot();
